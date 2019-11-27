@@ -75,6 +75,8 @@ class ForegroundBackgroundListener(textBox: EditText) : LifecycleObserver {
 
 class MainActivity : AppCompatActivity() {
 
+    var branch_h = "master"
+
 
     val mPlugInReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -146,6 +148,10 @@ class MainActivity : AppCompatActivity() {
             val msisd:String =edittext1.text.toString()
             println(msisd)
             registration.rewrite_msisdn(msisd)
+
+            registration.rewrite_branch(    branch_h)
+
+
             val registration_test: HyberFunAnswerRegister = registration.hyber_register_new("test","AIzaSyDvNUnk7R5Qx_aaMCFjFAWTi2jY8vbZW88")
             edtName.setText(text_msisdn + "\n" + registration_test.toString())
         }
@@ -221,6 +227,7 @@ class MainActivity : AppCompatActivity() {
             val tttt:String = edtName.text.toString()
             val ddd:HyberSDK = HyberSDK(edittext1.text.toString(), "password",this)
             ddd.rewrite_msisdn(edittext1.text.toString())
+            ddd.rewrite_branch(    branch_h)
             val sssss2: HyberFunAnswerGeneral = ddd.hyber_clear_current_device()
             edtName.setText(tttt + "\n" + sssss2.toString())
         }
@@ -275,6 +282,7 @@ class MainActivity : AppCompatActivity() {
             val msisd:String =edittext1.text.toString()
             println(msisd)
             ddd.rewrite_msisdn(msisd)
+            ddd.rewrite_branch(    branch_h)
             val sssss4: HyberFunAnswerGeneral = ddd.hyber_get_message_history(7200)
             edtName.setText(tttt + "\n" + sssss4)
 
@@ -285,6 +293,7 @@ class MainActivity : AppCompatActivity() {
             val tttt:String = edtName.text.toString()
             val ddd:HyberSDK = HyberSDK(edittext1.text.toString(), "password",this)
             ddd.rewrite_msisdn(edittext1.text.toString())
+            ddd.rewrite_branch(    branch_h)
 
             val sssss5: HyberFunAnswerGeneral = ddd.hyber_get_device_all_from_hyber()
 
@@ -297,6 +306,7 @@ class MainActivity : AppCompatActivity() {
             val tttt:String = edtName.text.toString()
             val ddd:HyberSDK = HyberSDK(edittext1.text.toString(), "password",this)
             ddd.rewrite_msisdn(edittext1.text.toString())
+            ddd.rewrite_branch(    branch_h)
 
             val sssss5: HyberFunAnswerGeneral = ddd.hyber_update_registration()
 
@@ -309,6 +319,7 @@ class MainActivity : AppCompatActivity() {
             val tttt:String = edtName.text.toString()
             val ddd:HyberSDK = HyberSDK(edittext1.text.toString(), "password",this)
             ddd.rewrite_msisdn(edittext1.text.toString())
+            ddd.rewrite_branch(    branch_h)
             val sssss7: HyberFunAnswerGeneral = ddd.hyber_send_message_callback("23f2f2f2f2f","Hello World")
             edtName.setText(tttt + "\n" + sssss7)
         }
@@ -317,6 +328,7 @@ class MainActivity : AppCompatActivity() {
             val tttt:String = edtName.text.toString()
             val ddd:HyberSDK = HyberSDK(edittext1.text.toString(), "password",this)
             ddd.rewrite_msisdn(edittext1.text.toString())
+            ddd.rewrite_branch(    branch_h)
             val sssss8: HyberFunAnswerGeneral = ddd.hyber_message_delivery_report("23f2f2f2f2f")
 
             edtName.setText(tttt + "\n" + sssss8)
@@ -327,6 +339,7 @@ class MainActivity : AppCompatActivity() {
 
             val ddd:HyberSDK = HyberSDK(edittext1.text.toString(), "password",this)
             ddd.rewrite_msisdn(edittext1.text.toString())
+            ddd.rewrite_branch(    branch_h)
 
         }
 
@@ -337,6 +350,7 @@ class MainActivity : AppCompatActivity() {
             val tttt:String = edtName.text.toString()
             val ddd:HyberSDK = HyberSDK(edittext1.text.toString(), "password",this)
             ddd.rewrite_msisdn(edittext1.text.toString())
+            ddd.rewrite_branch(    branch_h)
             val sssss33: HyberFunAnswerGeneral = ddd.hyber_clear_all_device()
             edtName.setText(tttt + "\n" + sssss33)
 

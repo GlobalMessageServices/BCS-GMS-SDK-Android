@@ -63,9 +63,13 @@ internal class Initialization(val context: Context) {
             sharedPreference.save("hyber_deviceName", hyber_deviceName1)
             paramsglobal.hyber_deviceName = hyber_deviceName1
 
-            val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
-            if (hyber_branch!="") {
-                paramsglobal.hyber_uuid = hyber_branch
+            try {
+                val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
+                if (hyber_branch != "") {
+                    paramsglobal.branch = hyber_branch
+                }
+            }catch (e:Exception){
+                println("hyber_branch failed")
             }
 
             //sharedPreference.save("firebase_registration_token", token.toString())
@@ -73,10 +77,15 @@ internal class Initialization(val context: Context) {
 
         } else {
 
-            val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
-            if (hyber_branch!="") {
-                paramsglobal.hyber_uuid = hyber_branch
+            try {
+                val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
+                if (hyber_branch != "") {
+                    paramsglobal.branch = hyber_branch
+                }
+            }catch (e:Exception){
+                println("hyber_branch failed")
             }
+
 
             val hyber_uuid: String = sharedPreference.getValueString("hyber_uuid")!!.toString()
             paramsglobal.hyber_uuid = hyber_uuid
@@ -143,17 +152,25 @@ internal class Initialization(val context: Context) {
             sharedPreference.save("hyber_uuid", hyber_uuid)
             paramsglobal.hyber_uuid = hyber_uuid
 
-            val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
-            if (hyber_branch!="") {
-                paramsglobal.hyber_uuid = hyber_branch
+            try {
+                val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
+                if (hyber_branch != "") {
+                    paramsglobal.branch = hyber_branch
+                }
+            }catch (e:Exception){
+                println("hyber_branch failed")
             }
 
 
         } else {
 
-            val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
-            if (hyber_branch!="") {
-                paramsglobal.hyber_uuid = hyber_branch
+            try {
+                val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
+                if (hyber_branch != "") {
+                    paramsglobal.branch = hyber_branch
+                }
+            }catch (e:Exception){
+                println("hyber_branch failed")
             }
 
             val hyber_uuid: String = sharedPreference.getValueString("hyber_uuid")!!.toString()
@@ -236,17 +253,25 @@ internal class Initialization(val context: Context) {
             sharedPreference.save("hyber_uuid", hyber_uuid)
             paramsglobal.hyber_uuid = hyber_uuid
 
-            val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
-            if (hyber_branch!="") {
-                paramsglobal.hyber_uuid = hyber_branch
+            try {
+                val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
+                if (hyber_branch != "") {
+                    paramsglobal.branch = hyber_branch
+                }
+            }catch (e:Exception){
+                println("hyber_branch failed")
             }
 
 
         } else {
 
-            val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
-            if (hyber_branch!="") {
-                paramsglobal.hyber_uuid = hyber_branch
+            try {
+                val hyber_branch: String = sharedPreference.getValueString("hyber_branch")!!.toString()
+                if (hyber_branch != "") {
+                    paramsglobal.branch = hyber_branch
+                }
+            }catch (e:Exception){
+                println("hyber_branch failed")
             }
 
             val hyber_uuid: String = sharedPreference.getValueString("hyber_uuid")!!.toString()

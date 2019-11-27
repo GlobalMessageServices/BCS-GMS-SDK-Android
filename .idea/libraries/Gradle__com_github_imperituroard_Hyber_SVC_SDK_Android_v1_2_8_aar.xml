@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: com.github.imperituroard:Hyber-SVC-SDK-Android:v1.2.8@aar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/80d3f7dc3db4c906c5ab8d713708ca99/Hyber-SVC-SDK-Android-v1.2.8/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/80d3f7dc3db4c906c5ab8d713708ca99/Hyber-SVC-SDK-Android-v1.2.8/res" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

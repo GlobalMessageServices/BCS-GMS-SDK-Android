@@ -65,7 +65,7 @@ internal object HyberParameters {
     var push_notification_display_priority: Int = 2
 
     //var branch = "test"
-    var branch = "master"
+    var branch: String = "master"
 
 
 
