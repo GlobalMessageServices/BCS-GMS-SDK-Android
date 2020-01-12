@@ -11,10 +11,57 @@ import com.hyber.android.hybersdkandroid.add.HyberParsing
 import java.util.concurrent.Executors
 import android.os.Messenger
 import android.content.Intent
+import com.google.firebase.iid.FirebaseInstanceId
 import com.hyber.android.hybersdkandroid.add.RewriteParams
 import com.hyber.android.hybersdkandroid.core.HyberPublicParams
 import com.hyber.android.hybersdkandroid.core.Initialization
+import com.google.firebase.iid.FirebaseInstanceIdService
 
+class FirebaseInstanceId : FirebaseInstanceIdService() {
+
+    private var api: HyberApi = HyberApi()
+
+    override fun onTokenRefresh() {
+        super.onTokenRefresh()
+        // Get updated InstanceID token.
+        val s = FirebaseInstanceId.getInstance().token
+        Log.d("FirebaseInstanceid", "Refreshed token: " + s)
+
+        try {
+            if (HyberParameters.hyber_registration_token != "" && HyberParameters.firebase_registration_token != "") {
+                api.hyber_device_update(
+                    HyberParameters.hyber_registration_token,
+                    HyberParameters.firebase_registration_token,
+                    HyberParameters.hyber_deviceName,
+                    HyberParameters.hyber_deviceType,
+                    HyberParameters.hyber_osType,
+                    HyberParameters.sdkversion,
+                    s.toString()
+                )
+            } else {
+                println("Update failed")
+            }
+
+        } catch (e: Exception) {
+            println("Update failed")
+        }
+
+
+        try {
+            if (s.toString() != "") {
+                val hyber_update_params: RewriteParams = RewriteParams(applicationContext)
+                hyber_update_params.rewrite_firebase_token(s.toString())
+            }
+
+        } catch (e: Exception) {
+            println("Update2 failed")
+        }
+
+        // TODO: Implement this method to send any registration to your app's servers.
+        //sendRegistrationToServer(refreshedToken)
+    }
+
+}
 
 internal class HyberFirebaseService() : FirebaseMessagingService() {
 
@@ -52,52 +99,6 @@ internal class HyberFirebaseService() : FirebaseMessagingService() {
         super.onDestroy()
         Log.d(TAG, "MyService onDestroy")
         var someRes = null
-    }
-
-    override fun onNewToken(s: String) {
-        super.onNewToken(s)
-        Log.d(
-            TAG,
-            "Result: Start step1, Function: onNewToken, Class: HyberFirebaseService, new_token: $s"
-        )
-        //HyberParameters.firebase_registration_token = s
-        //hyber_update_params.rewrite_firebase_token(s)
-        //hyber_main.hyber_update_registration()
-
-        try {
-            if (HyberParameters.hyber_registration_token != "" && HyberParameters.firebase_registration_token != "") {
-                api.hyber_device_update(
-                    HyberParameters.hyber_registration_token,
-                    HyberParameters.firebase_registration_token,
-                    HyberParameters.hyber_deviceName,
-                    HyberParameters.hyber_deviceType,
-                    HyberParameters.hyber_osType,
-                    HyberParameters.sdkversion,
-                    s
-                )
-            } else {
-                println("Update failed")
-            }
-
-        } catch (e: Exception) {
-            println("Update failed")
-        }
-
-
-        try {
-            if (s != "") {
-                val hyber_update_params: RewriteParams = RewriteParams(applicationContext)
-                hyber_update_params.rewrite_firebase_token(s)
-            }
-
-        } catch (e: Exception) {
-            println("Update2 failed")
-        }
-
-
-        // If you want to send messages to this application instance or
-        // manage this apps subscriptions on the server side, send the
-        // Instance ID token to your app server.
     }
 
 

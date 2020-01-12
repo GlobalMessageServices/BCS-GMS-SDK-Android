@@ -46,9 +46,9 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.9.1"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    implementation 'com.google.firebase:firebase-core:17.2.0'
-    implementation 'com.google.firebase:firebase-iid:20.0.0'
-    implementation 'com.google.firebase:firebase-messaging:20.0.0'
+    implementation 'com.google.firebase:firebase-core:11.6.2'
+    implementation 'com.google.firebase:firebase-iid:11.6.2'
+    implementation 'com.google.firebase:firebase-messaging:11.6.2'
     implementation 'android.arch.work:work-runtime:1.0.1'
 
     // Testing dependencies
