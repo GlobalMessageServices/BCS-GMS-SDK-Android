@@ -2,11 +2,16 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/Desktop-Projects-Android-Hyber-SDK-Android.iml" filepath="$PROJECT_DIR$/Desktop-Projects-Android-Hyber-SDK-Android.iml" group="Hyber-SDK-Android" />
       <module fileurl="file://$PROJECT_DIR$/Hyber-SDK-Android.iml" filepath="$PROJECT_DIR$/Hyber-SDK-Android.iml" group="Hyber-SDK-Android" />
+      <module fileurl="file://$PROJECT_DIR$/Projects-Android-Hyber-SDK-Android.iml" filepath="$PROJECT_DIR$/Projects-Android-Hyber-SDK-Android.iml" group="Hyber-SDK-Android" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="Hyber-SDK-Android/app" />
       <module fileurl="file://$PROJECT_DIR$/hybersdkandroid/hybersdkandroid.iml" filepath="$PROJECT_DIR$/hybersdkandroid/hybersdkandroid.iml" group="Hyber-SDK-Android/hybersdkandroid" />
+      <module fileurl="file://$PROJECT_DIR$/imperituroard-Desktop-Projects-Android-Hyber-SDK-Android.iml" filepath="$PROJECT_DIR$/imperituroard-Desktop-Projects-Android-Hyber-SDK-Android.iml" group="Hyber-SDK-Android" />
       <module fileurl="file://$PROJECT_DIR$/sksdkandroidpr.iml" filepath="$PROJECT_DIR$/sksdkandroidpr.iml" group="sksdkandroidpr" />
       <module fileurl="file://$PROJECT_DIR$/sksdkandroid/test.iml" filepath="$PROJECT_DIR$/sksdkandroid/test.iml" group="sksdkandroidpr/sksdkandroid" />
+      <module fileurl="file://$PROJECT_DIR$/app/test1.iml" filepath="$PROJECT_DIR$/app/test1.iml" group="Hyber-SDK-Android/app" />
+      <module fileurl="file://$PROJECT_DIR$/hybersdkandroid/test2.iml" filepath="$PROJECT_DIR$/hybersdkandroid/test2.iml" group="Hyber-SDK-Android/hybersdkandroid" />
     </modules>
   </component>
 </project>
