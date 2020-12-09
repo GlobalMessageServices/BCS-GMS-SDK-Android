@@ -1,26 +1,33 @@
-package com.push.android.pushsdkandroid.add
+package com.push.android.pushsdkandroid.utils
 
 import android.os.Build
 import android.text.TextUtils
 import android.content.Context
 import android.content.res.Configuration
-import com.push.android.pushsdkandroid.logger.PushKLoggerSdk
 
-class GetInfo {
+/**
+ * Utils for getting info
+ */
+internal object Info {
 
     /** Returns the consumer friendly device name  */
-    fun getDeviceName(): String? {
+    fun getDeviceName(): String {
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
         return try {
             if (model.startsWith(manufacturer)) {
-                capitalize(model)
-            } else capitalize(manufacturer) + " " + model
+                capitalize(model).toString()
+            } else {
+                capitalize(manufacturer) + " " + model
+            }
         } catch (e: Exception) {
             "unknown"
         }
     }
 
+    /**
+     * Get android version
+     */
     fun getAndroidVersion(): String {
         return try {
             Build.VERSION.RELEASE
@@ -29,16 +36,18 @@ class GetInfo {
         }
     }
 
-    //get device type (phone or tablet)
+    /**
+     * Get device type (phone or tablet)
+     */
     fun getPhoneType(context: Context): String {
         return try {
             val flagIsTab: Boolean =
                 context.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK >= Configuration.SCREENLAYOUT_SIZE_LARGE
             if (flagIsTab) {
-                PushKLoggerSdk.debug("Result: Function: get_phone_type, Class: GetInfo, flagisTab: $flagIsTab, answer: tablet")
+                PushSDKLogger.debug(context, "Result: Function: get_phone_type, Class: GetInfo, flagisTab: $flagIsTab, answer: tablet")
                 "tablet"
             } else {
-                PushKLoggerSdk.debug("Result: Function: get_phone_type, Class: GetInfo, flagisTab: $flagIsTab, answer: phone")
+                PushSDKLogger.debug(context, "Result: Function: get_phone_type, Class: GetInfo, flagisTab: $flagIsTab, answer: phone")
                 "phone"
             }
         } catch (e: java.lang.Exception) {
@@ -46,6 +55,9 @@ class GetInfo {
         }
     }
 
+    /**
+     * Capitalize string (why?!?!)
+     */
     private fun capitalize(str: String): String? {
         if (TextUtils.isEmpty(str)) {
             return str
@@ -65,6 +77,21 @@ class GetInfo {
             phrase.append(c)
         }
         return phrase.toString()
+    }
+
+    /**
+     * Get current OS Type
+     * @return current OS type
+     */
+    fun getOSType(): String {
+        return "android"
+    }
+
+    /**
+     * Get device type (phone or tablet)
+     */
+    fun getDeviceType(context: Context): String {
+        return getPhoneType(context)
     }
 
 

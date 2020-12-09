@@ -19,67 +19,85 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.google.gson.Gson
-import com.push.android.pushsdkandroid.add.GetInfo
-import com.push.android.pushsdkandroid.add.PushParsing
-import com.push.android.pushsdkandroid.add.RewriteParams
-import com.push.android.pushsdkandroid.core.PushKApi
-import com.push.android.pushsdkandroid.core.PushSdkParameters
-import com.push.android.pushsdkandroid.logger.PushKLoggerSdk
-import com.push.android.pushsdkandroid.models.PushDataModel
+import com.push.android.pushsdkandroid.utils.Info
+import com.push.android.pushsdkandroid.core.APIHandler
+import com.push.android.pushsdkandroid.core.PushSdkSavedDataProvider
+import com.push.android.pushsdkandroid.core.RewriteParams
+import com.push.android.pushsdkandroid.utils.PushSDKLogger
+import com.push.android.pushsdkandroid.models.PushDataMessageModel
 import java.net.URL
 import java.util.*
 import kotlin.random.Random
 
 /**
- * A "FirebaseMessagingService based" service for handling push messages
+ * A "FirebaseMessagingService based" service for handling push messages;
+ * Extend it and override available callbacks at will;
+ * Also don't forget to add your service to AndroidManifest.xml
  *
- * @param PARAM_NOTIFICATIONS_SUMMARY_TITLE_AND_TEXT
- * Summary notification title and text <title, text>, used for displaying a "summary notification",
- * which serves as a root notification for other notifications
- * notifications will not be bundled(grouped) if null
- * @see (https://developer.android.com/training/notify-user/group)
- * @see (https://stackoverflow.com/a/41114135)
- * ignored if api level is below android 7
+ * @constructor A "FirebaseMessagingService based" service for handling push messages
  *
- * @param PARAM_NOTIFICATIONS_ICON_RESOURCE_ID Notification small icon
+ * @param summaryNotificationTitleAndText Summary notification title and text <title, text>,
+ * used for displaying a "summary notification", which serves as a root notification for other notifications
+ * notifications will not be bundled(grouped) if null; Ignored if api level is below android 7
  *
- * @param PARAM_NOTIFICATIONS_STYLE Notification style
- * @see NotificationStyle
+ * @param notificationIconResourceId Notification small icon
+ *
+ * @param notificationStyle Notification style
+ *
+ * @see NotificationStyle, (https://developer.android.com/training/notify-user/group), (https://stackoverflow.com/a/41114135)
  *
  */
 open class PushKFirebaseService(
-    private val PARAM_NOTIFICATIONS_SUMMARY_TITLE_AND_TEXT: Pair<String, String>?,
-    private val PARAM_NOTIFICATIONS_ICON_RESOURCE_ID: Int = android.R.drawable.ic_notification_overlay,
-    private val PARAM_NOTIFICATIONS_STYLE: NotificationStyle = NotificationStyle.LARGE_ICON
+    private val summaryNotificationTitleAndText: Pair<String, String>?,
+    private val notificationIconResourceId: Int = android.R.drawable.ic_notification_overlay,
+    private val notificationStyle: NotificationStyle = NotificationStyle.LARGE_ICON
 ) : FirebaseMessagingService() {
 
-    private var api: PushKApi = PushKApi()
-    private var parsing: PushParsing = PushParsing()
-    private var getDevInform: GetInfo = GetInfo()
+    private lateinit var pushSdkSavedDataProvider: PushSdkSavedDataProvider
+    private lateinit var api: APIHandler
 
+    /**
+     * Constants used within the PushKFirebaseService
+     */
     companion object {
+        /**
+         * max notifications that can be shown by the system at a time
+         */
         const val MAX_NOTIFICATIONS = 25
 
+        /**
+         * Channel id of notifications
+         */
         const val DEFAULT_NOTIFICATION_CHANNEL_ID = "pushsdk.notification.channel"
-        const val DEFAULT_NOTIFICATION_GROUP_ID = "pushsdk.notification.group"
-        const val DEFAULT_NOTIFICATION_ACTION = "pushsdk.intent.action.notification"
-
-        const val DEFAULT_BROADCAST_ACTION = "com.push.android.pushsdkandroid.Push"
 
         /**
-         * The user visible name of the channel
-         * @see (https://developer.android.com/training/notify-user/channels)
-         * @see NotificationChannel constructor
+         * group id of notifications
+         */
+        const val DEFAULT_NOTIFICATION_GROUP_ID = "pushsdk.notification.group"
+
+        /**
+         * The "user-visible" name of the channel
          */
         const val NOTIFICATION_CHANNEL_NAME = "PushSDK channel"
 
+        /**
+         * tag for regular notification
+         */
         const val NOTIFICATION_TAG = "pushsdk_b_n"
+
+        /**
+         * constant summary notification id
+         */
         const val DEFAULT_SUMMARY_NOTIFICATION_ID = 0
+
+        /**
+         * tag for summary notification
+         */
         const val SUMMARY_NOTIFICATION_TAG = "pushsdk_s_b_n"
     }
 
     /**
-     * Notification styles enumeration
+     * Notification styles enumeration, used for displaying notifications
      * @see sendNotification
      */
     enum class NotificationStyle {
@@ -107,16 +125,18 @@ open class PushKFirebaseService(
      * @param strURL URL containing an image
      */
     private fun getBitmapFromURL(strURL: String?): Bitmap? {
-        try {
-            URL(strURL).openConnection().run {
-                doInput = true
-                connect()
-                return BitmapFactory.decodeStream(inputStream)
+        strURL?.let {
+            try {
+                URL(strURL).openConnection().run {
+                    doInput = true
+                    connect()
+                    return BitmapFactory.decodeStream(inputStream)
+                }
+            } catch (e: Exception) {
+                PushSDKLogger.debug(applicationContext, Log.getStackTraceString(e))
+                return null
             }
-        } catch (e: Exception) {
-            PushKLoggerSdk.debug(Log.getStackTraceString(e))
-            return null
-        }
+        } ?: return null
     }
 
     /**
@@ -126,7 +146,7 @@ open class PushKFirebaseService(
     private fun isAppInForeground(): Boolean {
         val isInForeground =
             ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
-        PushKLoggerSdk.debug("App is in foreground: $isInForeground")
+        PushSDKLogger.debug(applicationContext, "App is in foreground: $isInForeground")
         return isInForeground
     }
 
@@ -139,10 +159,10 @@ open class PushKFirebaseService(
         data: Map<String, String>
     ) {
         //parse the data object
-        val message = Gson().fromJson(data.toString(), PushDataModel::class.java).message
+        val message = Gson().fromJson(data["message"], PushDataMessageModel::class.java)
         if (message == null) {
             //message is empty, thus it must be an error
-            PushKLoggerSdk.error("message is empty")
+            PushSDKLogger.error("message is empty")
             //TODO do something if needed
             //then stop executing
             return
@@ -160,17 +180,6 @@ open class PushKFirebaseService(
                 )
             }
 
-            //build an intent for notification (click to open the app)
-            val pendingIntent = PendingIntent.getActivity(
-                this@PushKFirebaseService,
-                0,
-                packageManager.getLaunchIntentForPackage(applicationInfo.packageName)!!.apply {
-                    action = DEFAULT_NOTIFICATION_ACTION
-                    putExtra("data", data.toString())
-                },
-                PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
             //construct the notification object
             val notification =
                 NotificationCompat.Builder(applicationContext, DEFAULT_NOTIFICATION_CHANNEL_ID)
@@ -180,10 +189,23 @@ open class PushKFirebaseService(
                         setAutoCancel(true)
                         setContentTitle(message.title)
                         setContentText(message.body)
-                        setSmallIcon(PARAM_NOTIFICATIONS_ICON_RESOURCE_ID)
+                        setSmallIcon(notificationIconResourceId)
                         setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
-                        setContentIntent(pendingIntent)
-                        when (PARAM_NOTIFICATIONS_STYLE) {
+                        //actually should never be null, but just in case
+                        packageManager.getLaunchIntentForPackage(applicationInfo.packageName)?.let {
+                            //build an intent for notification (click to open the app)
+                            val pendingIntent = PendingIntent.getActivity(
+                                this@PushKFirebaseService,
+                                0,
+                                it.apply {
+                                    action = PushSDK.NOTIFICATION_CLICK_INTENT_ACTION
+                                    putExtra(PushSDK.NOTIFICATION_CLICK_PUSH_DATA_EXTRA_NAME, data["message"])
+                                },
+                                PendingIntent.FLAG_UPDATE_CURRENT
+                            )
+                            setContentIntent(pendingIntent)
+                        }
+                        when (notificationStyle) {
                             NotificationStyle.DEFAULT_PLAIN_TEXT -> {
                                 //do nothing
                             }
@@ -209,7 +231,7 @@ open class PushKFirebaseService(
             //Not much point in making bundled notifications on API < 24
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 //construct the summary notification object
-                PARAM_NOTIFICATIONS_SUMMARY_TITLE_AND_TEXT?.let {
+                summaryNotificationTitleAndText?.let {
                     val summaryNotification =
                         NotificationCompat.Builder(
                             applicationContext,
@@ -220,9 +242,9 @@ open class PushKFirebaseService(
                                 setGroupSummary(true)
                                 priority = NotificationCompat.PRIORITY_MAX
                                 setAutoCancel(true)
-                                setContentTitle(PARAM_NOTIFICATIONS_SUMMARY_TITLE_AND_TEXT.first)
-                                setContentText(PARAM_NOTIFICATIONS_SUMMARY_TITLE_AND_TEXT.second)
-                                setSmallIcon(PARAM_NOTIFICATIONS_ICON_RESOURCE_ID)
+                                setContentTitle(summaryNotificationTitleAndText.first)
+                                setContentText(summaryNotificationTitleAndText.second)
+                                setSmallIcon(notificationIconResourceId)
                             }.build()
 
                     //show summary notification
@@ -237,14 +259,12 @@ open class PushKFirebaseService(
     }
 
     /**
-     * Whether system has space to show at least 1 more notification
-     * Assume there is no space by default
-     *
-     * Will always return true for api levels < 23
+     * Whether system has space to show at least 1 more notification;
+     * Assume there is no space by default; Will always return true for api levels < 23
      *
      * @param cancelOldest - cancel oldest notification to free up space
      */
-    open fun hasSpaceForNotification(cancelOldest: Boolean) : Boolean {
+    private fun hasSpaceForNotification(cancelOldest: Boolean) : Boolean {
         var hasSpaceForNotification = false
 
         //check notification limit, and cancel first active notification if possible
@@ -290,10 +310,8 @@ open class PushKFirebaseService(
     }
 
     /**
-     * Called when the service receives a FCM push containing data
-     *
-     * Override it without the "super" call, if you want to implement
-     * your own notifications or disable them
+     * Called when the service receives a FCM push containing data; Override it
+     * without the "super" call, if you want to implement your own notifications or disable them
      *
      * @param appIsInForeground whether the application is currently in foreground or background
      * @param remoteMessage received remote message object
@@ -303,6 +321,7 @@ open class PushKFirebaseService(
             //send notification
             val areNotificationsEnabled = NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()
             if (areNotificationsEnabled && hasSpaceForNotification(true)) {
+                sendNotification(remoteMessage.data)
                 onDisplayNotification(appIsInForeground, remoteMessage)
             } else {
                 //notify the user there is no space for notifications,
@@ -313,12 +332,8 @@ open class PushKFirebaseService(
     }
 
     /**
-     * Called when notification will be displayed
-     * this method displays a notification
-     *
-     * Displaying a notification is not guaranteed if the application's notification
-     * limit has been reached.
-     *
+     * Called when notification will be displayed;
+     * Displaying a notification is not guaranteed if the application's notification limit has been reached;
      * The method will not be called if onReceiveDataPush wasn't called before
      *
      * @param appIsInForeground whether the application is currently in foreground or background
@@ -326,12 +341,11 @@ open class PushKFirebaseService(
      * @see sendNotification the default method for showing notifications
      */
     open fun onDisplayNotification(appIsInForeground: Boolean, remoteMessage: RemoteMessage) {
-        sendNotification(remoteMessage.data)
+        //does nothing
     }
 
     /**
-     * Called when notification will not be displayed, so you can try displaying it manually
-     *
+     * Called when notification will not be displayed, so you can try displaying it manually;
      * The method will not be called if onReceiveDataPush wasn't called before
      *
      * @param areNotificationsEnabled whether notifications are enabled for the app
@@ -344,11 +358,29 @@ open class PushKFirebaseService(
     }
 
     /**
+     * Sends dataPush broadcast, so it could be caught somewhere else
+     */
+    private fun sendDataPushBroadcast(remoteMessage: RemoteMessage) {
+        try {
+            Intent().apply {
+                action = PushSDK.BROADCAST_PUSH_DATA_INTENT_ACTION
+                putExtra(PushSDK.BROADCAST_PUSH_DATA_EXTRA_NAME, remoteMessage.data["message"])
+                sendBroadcast(this)
+            }
+            PushSDKLogger.debug(applicationContext, "datapush broadcast success")
+        } catch (e: Exception) {
+            PushSDKLogger.debug(applicationContext, "datapush broadcast error: ${Log.getStackTraceString(e)}")
+        }
+    }
+
+    /**
      * Called when the service is created
      */
     override fun onCreate() {
         super.onCreate()
-        PushKLoggerSdk.debug("PushFirebaseService.onCreate : MyService onCreate")
+        pushSdkSavedDataProvider = PushSdkSavedDataProvider(applicationContext)
+        api = APIHandler(applicationContext)
+        PushSDKLogger.debug(applicationContext, "PushFirebaseService.onCreate : MyService onCreate")
     }
 
     /**
@@ -356,7 +388,7 @@ open class PushKFirebaseService(
      */
     override fun onDestroy() {
         super.onDestroy()
-        PushKLoggerSdk.debug("PushFirebaseService.onDestroy : MyService onDestroy")
+        PushSDKLogger.debug(applicationContext, "PushFirebaseService.onDestroy : MyService onDestroy")
     }
 
     /**
@@ -365,38 +397,41 @@ open class PushKFirebaseService(
      */
     override fun onNewToken(newToken: String) {
         super.onNewToken(newToken)
-        PushKLoggerSdk.debug("PushFirebaseService.onNewToken : Result: Start step1, Function: onNewToken, Class: PushFirebaseService, new_token: $newToken")
+        PushSDKLogger.debug(applicationContext, "PushFirebaseService.onNewToken : Result: Start step1, Function: onNewToken, Class: PushFirebaseService, new_token: $newToken")
 
         try {
             if (newToken != "") {
-                val pushUpdateParams = RewriteParams(applicationContext)
+                val pushUpdateParams =
+                    RewriteParams(
+                        applicationContext
+                    )
                 pushUpdateParams.rewriteFirebaseToken(newToken)
-                PushKLoggerSdk.debug("PushFirebaseService.onNewToken : local update: success")
+                PushSDKLogger.debug(applicationContext, "PushFirebaseService.onNewToken : local update: success")
             }
         } catch (e: Exception) {
-            PushKLoggerSdk.debug("PushFirebaseService.onNewToken : local update: unknown error")
+            PushSDKLogger.debug(applicationContext, "PushFirebaseService.onNewToken : local update: unknown error")
         }
 
         try {
-            if (PushKDatabase.push_k_registration_token != "" && PushKDatabase.firebase_registration_token != "") {
-                val localPhoneInfoNewToken = getDevInform.getPhoneType(applicationContext)
-                PushKLoggerSdk.debug("PushFirebaseService.onNewToken : localPhoneInfoNewToken: $localPhoneInfoNewToken")
+            if (pushSdkSavedDataProvider.push_k_registration_token != "" && pushSdkSavedDataProvider.firebase_registration_token != "") {
+                val localPhoneInfoNewToken = Info.getDeviceType(applicationContext)
+                PushSDKLogger.debug(applicationContext, "PushFirebaseService.onNewToken : localPhoneInfoNewToken: $localPhoneInfoNewToken")
                 val answerPlatform = api.hDeviceUpdate(
-                    PushKDatabase.push_k_registration_token,
-                    PushKDatabase.firebase_registration_token,
-                    PushSdkParameters.push_k_deviceName,
+                    pushSdkSavedDataProvider.push_k_registration_token,
+                    pushSdkSavedDataProvider.firebase_registration_token,
+                    Info.getDeviceName(),
                     localPhoneInfoNewToken,
-                    PushSdkParameters.push_k_osType,
-                    PushSdkParameters.sdkVersion,
+                    Info.getOSType(),
+                    PushSDK.getSDKVersionName(),
                     newToken
                 )
-                PushKLoggerSdk.debug("PushFirebaseService.onNewToken : update success $answerPlatform")
+                PushSDKLogger.debug(applicationContext, "PushFirebaseService.onNewToken : update success $answerPlatform")
             } else {
-                PushKLoggerSdk.debug("PushFirebaseService.onNewToken : update: failed")
+                PushSDKLogger.debug(applicationContext, "PushFirebaseService.onNewToken : update: failed")
             }
 
         } catch (e: Exception) {
-            PushKLoggerSdk.debug("PushFirebaseService.onNewToken : update: unknown error")
+            PushSDKLogger.debug(applicationContext, "PushFirebaseService.onNewToken : update: unknown error")
         }
 
         // If you want to send messages to this application instance or
@@ -418,53 +453,37 @@ open class PushKFirebaseService(
      * messages. For more see: https://firebase.google.com/docs/cloud-messaging/concept-options
      */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        PushKLoggerSdk.debug("PushFirebaseService.onMessageReceived : started")
+        PushSDKLogger.debug(applicationContext, "PushFirebaseService.onMessageReceived : started")
         super.onMessageReceived(remoteMessage)
 
-        // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
-        PushKLoggerSdk.debug("From: " + remoteMessage.from!!)
+        PushSDKLogger.debugFirebaseRemoteMessage(applicationContext, remoteMessage)
 
         // Check if message contains a data payload.
-        if (remoteMessage.data.isNotEmpty()) {
+        if (remoteMessage.data.isNotEmpty() && remoteMessage.data["source"] == "Messaging HUB") {
             try {
-                PushKLoggerSdk.debug("Message from remote: $remoteMessage")
-                PushKLoggerSdk.debug("Message from remote data: ${remoteMessage.data}")
-                PushKLoggerSdk.debug("Message from remote messageId: ${remoteMessage.messageId}")
-                PushKLoggerSdk.debug("Message from remote messageType: ${remoteMessage.messageType}")
-                PushKLoggerSdk.debug("Message from remote priority: ${remoteMessage.priority}")
-                PushKLoggerSdk.debug("Message from remote rawData: ${remoteMessage.rawData}")
-                PushKLoggerSdk.debug("Message from remote ttl: ${remoteMessage.ttl}")
-                PushKLoggerSdk.debug("Message from remote to: ${remoteMessage.to}")
-                PushKLoggerSdk.debug("Message from remote sentTime: ${remoteMessage.sentTime}")
-                PushKLoggerSdk.debug("Message from remote collapseKey: ${remoteMessage.collapseKey}")
-                PushKLoggerSdk.debug("Message from remote originalPriority: ${remoteMessage.originalPriority}")
-                PushKLoggerSdk.debug("Message from remote senderId: ${remoteMessage.senderId}")
-                PushKLoggerSdk.debug("Message from remote data to string: ${remoteMessage.data}")
-                if (PushKDatabase.firebase_registration_token != "" && PushKDatabase.push_k_registration_token != "") {
-                    val pushAnswer = api.hMessageDr(
-                        parsing.parseMessageId(remoteMessage.data.toString()),
-                        PushKDatabase.firebase_registration_token,
-                        PushKDatabase.push_k_registration_token
-                    )
-                    PushKLoggerSdk.debug("From Message Delivery Report: $pushAnswer")
-                    PushKLoggerSdk.debug("delivery report success: messid ${remoteMessage.messageId.toString()}, token: ${PushKDatabase.firebase_registration_token}, push_k_registration_token: ${PushKDatabase.push_k_registration_token}")
-                } else {
-                    PushKLoggerSdk.debug("delivery report failed: messid ${remoteMessage.messageId.toString()}, token: ${PushKDatabase.firebase_registration_token}, push_k_registration_token: ${PushKDatabase.push_k_registration_token}")
+                val message = Gson().fromJson(remoteMessage.data["message"], PushDataMessageModel::class.java)
+                message?.let {
+                    if (pushSdkSavedDataProvider.firebase_registration_token != "" && pushSdkSavedDataProvider.push_k_registration_token != "") {
+                        val pushAnswer = api.hMessageDr(
+                            message.messageId,
+                            pushSdkSavedDataProvider.firebase_registration_token,
+                            pushSdkSavedDataProvider.push_k_registration_token
+                        )
+                        PushSDKLogger.debug(applicationContext, "From Message Delivery Report: $pushAnswer")
+                        PushSDKLogger.debug(applicationContext, "delivery report success: messid ${remoteMessage.messageId.toString()}," +
+                                " token: ${pushSdkSavedDataProvider.firebase_registration_token}," +
+                                " push_k_registration_token: ${pushSdkSavedDataProvider.push_k_registration_token}")
+                    } else {
+                        PushSDKLogger.debug(applicationContext, "delivery report failed: messid ${remoteMessage.messageId.toString()}," +
+                                " token: ${pushSdkSavedDataProvider.firebase_registration_token}," +
+                                " push_k_registration_token: ${pushSdkSavedDataProvider.push_k_registration_token}")
+                    }
                 }
             } catch (e: Exception) {
-                PushKLoggerSdk.debug("onMessageReceived: failed")
+                PushSDKLogger.debug(applicationContext, "onMessageReceived: failed: ${Log.getStackTraceString(e)}")
             }
 
-            try {
-                PushKPushMess.message = remoteMessage.data.toString().replace("\\/", "/")
-                Intent().apply {
-                    action = DEFAULT_BROADCAST_ACTION
-                    sendBroadcast(this)
-                }
-            } catch (e: Exception) {
-                PushKPushMess.message = ""
-            }
-            PushKLoggerSdk.debug("Message data payload: " + remoteMessage.data.toString())
+            sendDataPushBroadcast(remoteMessage)
 
             //data push received, make a callback
             onReceiveDataPush(isAppInForeground(), remoteMessage)
@@ -472,6 +491,9 @@ open class PushKFirebaseService(
     }
 
     /**
+     * Called when firebase deletes some messages (they will never be delivered);
+     * When the app instance receives this callback, it should perform a full sync with your app server
+     *
      * In some situations, FCM may not deliver a message.
      * This occurs when there are too many messages (>100) pending for your app on a particular
      * device at the time it connects or if the device hasn't connected to FCM in more than one month.
