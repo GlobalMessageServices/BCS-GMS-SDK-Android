@@ -1,13 +1,13 @@
-package com.push.android.pushsdkandroid.add
+package com.push.android.pushsdkandroid.core
 
 import android.content.Context
-import com.push.android.pushsdkandroid.core.PushKFunAnswerGeneral
-import com.push.android.pushsdkandroid.core.PushKFunAnswerRegister
+import com.push.android.pushsdkandroid.models.PushKFunAnswerGeneral
+import com.push.android.pushsdkandroid.models.PushKFunAnswerRegister
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JSON
 
-internal class Answer {
+internal class RequestAnswerHandler {
 
     @Serializable
     data class ParentRegistration(
@@ -81,7 +81,8 @@ internal class Answer {
         context: Context
     ): PushKFunAnswerRegister {
 
-        val pushKRewrite = RewriteParams(context)
+        val pushKRewrite =
+            RewriteParams(context)
         val answerRegistrar: PushKFunAnswerRegister
 
         when (resp_code) {
