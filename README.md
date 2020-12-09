@@ -4,14 +4,29 @@
 
 Get started by visiting:
 
-* [Setting up your project to work with the SDK](https://github.com/Incuube/Hyber-GMS-SDK-Android/wiki/Setting-up-your-project-to-work-with-the-SDK)
+* [Setting up your project to work with the SDK](https://github.com/GlobalMessageServices/Hyber-GMS-SDK-Android/wiki/Setting-up-your-project-to-work-with-the-SDK)
 
-* [SDK method reference page](https://github.com/Incuube/Hyber-GMS-SDK-Android/wiki/SDK-methods)
+* [Receiving push messages and showing notifications](https://github.com/GlobalMessageServices/Hyber-GMS-SDK-Android/wiki/Receiving-push-messages-and-showing-notifications)
 
-* [Receiving push messages and showing notifications](https://github.com/Incuube/Hyber-GMS-SDK-Android/wiki/Receiving-push-messages-and-showing-notifications)
+### Documentation:
+https://javadoc.jitpack.io/com/github/GlobalMessageServices/Hyber-GMS-SDK-Android/v1.0.0.52-RELEASE/javadoc/index.html
 
+**RECOMMENDED VERSION: v1.0.0.52-RELEASE**
+
+**RECOMMENDED REMOTE API VERSION: 3.0**
+
+>v1.0.0.52-RELEASE and higher now supports http protocol
+
+To use http protocol instead of https, add `android:usesCleartextTraffic="true"` to your application tag inside android manifest
+```
+<application
+        ...
+
+        android:usesCleartextTraffic="true"
+        >
+```
+ 
 ## Short dependency info
-
 ### Push SDK
 
 Make sure you have declared maven repository in your project (top-level) `build.gradle`
@@ -29,7 +44,7 @@ Add dependency to your module (app-level) `build.gradle`
 ```
 dependencies {
     ...
-    implementation 'com.github.Incuube:Hyber-GMS-SDK-Android:v1.0.0.47'
+    implementation 'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:v1.0.0.52-RELEASE'
 }
 ```
 
