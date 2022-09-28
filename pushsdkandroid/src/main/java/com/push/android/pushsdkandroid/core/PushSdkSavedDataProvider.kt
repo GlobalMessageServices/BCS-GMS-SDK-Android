@@ -15,42 +15,42 @@ internal class PushSdkSavedDataProvider(private val context: Context) {
             PushSDKLogger.debug(context, "[${javaClass.simpleName}] saving registrationstatus: $value")
         }
 
-    var push_k_user_Password: String
+    var userPassword: String
         get() = sharedPreferencesHandler.getValueString("push_k_user_Password")
         set(value) {
             sharedPreferencesHandler.saveString("push_k_user_Password", value)
             PushSDKLogger.debug(context, "[${javaClass.simpleName}] saving push_k_user_Password: $value")
         }
 
-    var push_k_user_msisdn: String
+    var userMsisdn: String
         get() = sharedPreferencesHandler.getValueString("push_k_user_msisdn")
         set(value) {
             sharedPreferencesHandler.saveString("push_k_user_msisdn", value)
             PushSDKLogger.debug(context, "[${javaClass.simpleName}] saving push_k_user_msisdn: $value")
         }
 
-    var push_k_registration_token: String
+    var pushServiceRegistrationToken: String
         get() = sharedPreferencesHandler.getValueString("push_k_registration_token")
         set(value) {
             sharedPreferencesHandler.saveString("push_k_registration_token", value)
             PushSDKLogger.debug(context, "[${javaClass.simpleName}] saving push_k_registration_token: $value")
         }
 
-    var push_k_user_id: String
+    var pushServerUserId: String
         get() = sharedPreferencesHandler.getValueString("push_k_user_id")
         set(value) {
             sharedPreferencesHandler.saveString("push_k_user_id", value)
             PushSDKLogger.debug(context, "[${javaClass.simpleName}] saving push_k_user_id: $value")
         }
 
-    var push_k_registration_createdAt: String
+    var pushServiceRegistrationDate: String
         get() = sharedPreferencesHandler.getValueString("push_k_registration_createdAt")
         set(value) {
             sharedPreferencesHandler.saveString("push_k_registration_createdAt", value)
             PushSDKLogger.debug(context, "[${javaClass.simpleName}] saving push_k_registration_createdAt: $value")
         }
 
-    var firebase_registration_token: String
+    var firebaseRegistrationToken: String
         get() = sharedPreferencesHandler.getValueString("firebase_registration_token")
         set(value) {
             sharedPreferencesHandler.saveString("firebase_registration_token", value)

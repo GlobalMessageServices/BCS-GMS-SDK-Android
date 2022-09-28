@@ -14,16 +14,21 @@ import java.util.*
 
 internal object PushSDKLogger {
 
+    /**
+     * Logging tag
+     */
+    private const val TAG_LOGGING = "PushSDK"
+
     fun error(message: String) {
         if (Build.VERSION.SDK_INT >= 26) {
             val current = LocalDateTime.now()
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
             val formatted = current.format(formatter)
-            Log.e(PushSDK.TAG_LOGGING, "$formatted $message")
+            Log.e(TAG_LOGGING, "$formatted $message")
         } else {
             val formatted =
                 SimpleDateFormat.getDateTimeInstance().format(Calendar.getInstance().time)
-            Log.e(PushSDK.TAG_LOGGING, "$formatted $message")
+            Log.e(TAG_LOGGING, "$formatted $message")
         }
     }
 
@@ -32,13 +37,13 @@ internal object PushSDKLogger {
         if (pushSdkSavedDataProvider.logLevel == PushSDK.LogLevels.PUSHSDK_LOG_LEVEL_DEBUG.name) {
             if (Build.VERSION.SDK_INT >= 26) {
                 val current = LocalDateTime.now()
-                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
                 val formatted = current.format(formatter)
-                Log.d(PushSDK.TAG_LOGGING, "$formatted $message")
+                Log.d(TAG_LOGGING, "$formatted $message")
             } else {
                 val formatted =
                     SimpleDateFormat.getDateTimeInstance().format(Calendar.getInstance().time)
-                Log.d(PushSDK.TAG_LOGGING, "$formatted $message")
+                Log.d(TAG_LOGGING, "$formatted $message")
             }
         }
     }
