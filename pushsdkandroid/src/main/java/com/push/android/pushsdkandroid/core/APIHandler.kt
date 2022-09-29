@@ -190,7 +190,9 @@ internal class APIHandler(private val context: Context) {
 
 
             } catch (e: Exception) {
-                e.printStackTrace()
+                PushSDKLogger.error(e.stackTraceToString())
+                requestResponseCode = 710
+                requestResponseData = "unknown error"
             }
         }
         requestThread.start()

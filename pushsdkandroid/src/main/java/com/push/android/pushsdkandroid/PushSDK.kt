@@ -115,34 +115,38 @@ class PushSDK(
      * Update FCM token
      */
     private fun updateFCMToken() {
-        FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
-            if (!task.isSuccessful) {
-                PushSDKLogger.debug(
-                    context,
-                    "Fetching FCM registration token failed: ${task.exception}"
-                )
-            } else {
-                // Get new FCM registration token
-                val fcmToken = task.result
-
-                if (fcmToken.isNotEmpty() && !fcmToken.equals(pushSdkSavedDataProvider.firebaseRegistrationToken)) {
+        try {
+            FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
+                if (!task.isSuccessful) {
                     PushSDKLogger.debug(
                         context,
-                        "Old FCM token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}"
+                        "Fetching FCM registration token failed: ${task.exception}"
                     )
-                    PushSDKLogger.debug(context, "New FCM token: $fcmToken")
-                    pushSdkSavedDataProvider.firebaseRegistrationToken = fcmToken
-                    PushSDKLogger.debug(context, "FCM token updated successfully.")
                 } else {
-                    PushSDKLogger.debug(context, "New FCM token is either empty or up-to-date")
-                    PushSDKLogger.debug(
-                        context,
-                        "Current FCM token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}"
-                    )
-                    PushSDKLogger.debug(context, "Received FCM token: $fcmToken")
+                    // Get new FCM registration token
+                    val fcmToken = task.result
+
+                    if (fcmToken.isNotEmpty() && !fcmToken.equals(pushSdkSavedDataProvider.firebaseRegistrationToken)) {
+                        PushSDKLogger.debug(
+                            context,
+                            "Old FCM token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}"
+                        )
+                        PushSDKLogger.debug(context, "New FCM token: $fcmToken")
+                        pushSdkSavedDataProvider.firebaseRegistrationToken = fcmToken
+                        PushSDKLogger.debug(context, "FCM token updated successfully.")
+                    } else {
+                        PushSDKLogger.debug(context, "New FCM token is either empty or up-to-date")
+                        PushSDKLogger.debug(
+                            context,
+                            "Current FCM token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}"
+                        )
+                        PushSDKLogger.debug(context, "Received FCM token: $fcmToken")
+                    }
                 }
-            }
-        })
+            })
+        }catch (e: Exception){
+            PushSDKLogger.error(e.stackTraceToString())
+        }
     }
 
     /**
@@ -763,7 +767,7 @@ class PushSDK(
                     "messageId $messageId\n" +
                     "messageText $messageText"
         )
-        var response:PushServerAnswerGeneral
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
             if (pushSdkSavedDataProvider.registrationStatus) {
@@ -773,7 +777,7 @@ class PushSDK(
                     pushSdkSavedDataProvider.firebaseRegistrationToken, //_xPushSessionId
                     pushSdkSavedDataProvider.pushServiceRegistrationToken
                 )
-                 when (requestResponse.code) {
+                when (requestResponse.code) {
                     200 -> {
                         response = PushServerAnswerGeneral(
                             requestResponse.code,
@@ -810,7 +814,7 @@ class PushSDK(
                 )
             }
             PushSDKLogger.debug(context, "sendMessageCallback response: $response")
-            return  response
+            return response
         } catch (e: Exception) {
             PushSDKLogger.error(
                 "sendMessageCallback failed with exception: ${
@@ -851,7 +855,7 @@ class PushSDK(
                         pushSdkSavedDataProvider.firebaseRegistrationToken, //_xPushSessionId
                         pushSdkSavedDataProvider.pushServiceRegistrationToken
                     )
-                     when (requestResponse.code) {
+                    when (requestResponse.code) {
                         200 -> {
                             response = PushServerAnswerGeneral(
                                 requestResponse.code,
@@ -950,7 +954,7 @@ class PushSDK(
      */
     fun checkMessageQueue(): PushServerAnswerGeneral {
         PushSDKLogger.debug(context, "calling checkMessageQueue")
-        var response:PushServerAnswerGeneral
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
             if (pushSdkSavedDataProvider.registrationStatus) {
@@ -961,7 +965,7 @@ class PushSDK(
                         pushSdkSavedDataProvider.firebaseRegistrationToken,
                         pushSdkSavedDataProvider.pushServiceRegistrationToken
                     )
-                     when (requestResponse.code) {
+                    when (requestResponse.code) {
                         200 -> {
                             broadcastQueue(requestResponse.body)
                             response = PushServerAnswerGeneral(
