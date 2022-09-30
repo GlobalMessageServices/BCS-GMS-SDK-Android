@@ -22,7 +22,7 @@
 
 ### Recommended dependency versions to use within your app (or use whatever would be compatible with what is used within the SDK):
 *	Project (top-level) build.gradle:
- ```
+ ```Gradle
 buildscript {
     dependencies {
         ...
@@ -31,7 +31,7 @@ buildscript {
 }
 ```
 * Module (app-level) build.gradle:
-```
+```Gradle
 plugins {
     ...
     id 'com.google.gms.google-services'
@@ -45,7 +45,7 @@ dependencies {
 * Make sure you add proper google-services.json file to the root of your app module
 Read more at: https://firebase.google.com/docs/android/learn-more
 !!!Starting with Gradle 7 repositoriesMode in settings.gradle (Project Settings) should be changed as showed below: 
-```
+```Gradle
 	dependencyResolutionManagement {
 		repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
 		repositories{
@@ -94,7 +94,7 @@ Read more at: https://developer.android.com/studio/publish/app-signing#generate-
 
 ## Add the SDK to your project
 Make sure you have declared maven repository in your project (top-level) build.gradle
-```
+```Gradle
 allprojects {
     repositories {
         ...
@@ -105,7 +105,7 @@ allprojects {
 }
 ```
 Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.0
-```
+```Gradle
 dependencies {
     ...
     //or use a newer version if available
@@ -113,7 +113,7 @@ dependencies {
 }
 ```
 To use http protocol instead of https, add android:usesCleartextTraffic="true" to your application tag inside android manifest
-```
+```Gradle
 <application
         ...
 
@@ -126,7 +126,7 @@ Create a class that extends PushKFirebaseService<br>
 Specify title and text which may be displayed by the system in the "summary notification".<br>
 Read more about receiving push messages and displaying notifications using the PushSDK [here](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/wiki/Receiving-push-messages-and-showing-notifications).
 
-```
+```Kotlin
 class MyPushKFirebaseService : PushKFirebaseService(
     summaryNotificationTitleAndText = Pair("title", "text")
 ) {
@@ -222,7 +222,7 @@ class MyPushKFirebaseService : PushKFirebaseService(
 }
 ```
 Add the service to your AndroidManifest.xml
-```
+```Gradle
 <application
 ...>
 <service
@@ -242,7 +242,7 @@ Make sure you have extended the PushKFirebaseService and added it to the Android
 ### Init the SDK with the following basic parameters:
 *	context - the context you would like to use
 *	baseApiUrl - base URL path to the API
-```
+```Kotlin
 val pushSDK = PushSDK(
     context = this,
     baseApiUrl = "https://yourapilink.com/version/3.0" // API url that you would be provided with
@@ -250,7 +250,7 @@ val pushSDK = PushSDK(
 ```
 ### Register your device/application:
 *	Either register your device by using:
-```
+```Kotlin
 val answer1 = pushSDK.registerNewDevice(
     "clientAPIKey",  //API key that you would be provided with
     "appFingerprint", //APP fingerprint 
@@ -259,21 +259,21 @@ val answer1 = pushSDK.registerNewDevice(
 Log.d("TAG", answer1.toString())
 ```
 Which would produce a similar output if successful:
-```
+```Kotlin
 D/TAG: PushKFunAnswerRegister(code=200, result=Ok, description=Success, deviceId=1066, token=c71b4bc05ee24f8eac007cc63d8ff2c4, userId=82, userPhone=88002000600, createdAt=2020-10-29T08:12:33.194942+00)
 ```
 Then update registration:
-```
+```Kotlin
 val answer2 = pushSDK.updateRegistration()
 Log.d("TAG", answer2.toString())
 ```
 Which would produce a similar output if successful:
-```
+```Kotlin
 D/TAG: PushKFunAnswerGeneral(code=200, result=OK, description=Success, body={"deviceId": 1066})
 ```
 This will register the device within the system and automatically pick up your current firebase cloud messaging token
 *	Or register your device by manually specifying your firebase cloud messaging token:
-```
+```Kotlin
 val answer1 = pushSDK.registerNewDevice(
     "clientAPIKey",  //API key that you would be provided with
     "appFingerprint", //APP fingerprint 
@@ -285,7 +285,7 @@ Log.d("TAG", answer1.toString())
 ```
 This will register the device within the system and use the specified firebase cloud messaging token<br>
 Note: In case you are trying out this code for the first time, you may want to unregister all devices before registering a new one, so that registration would pass every time. You may do so by adding the following code before registering a device:
-```
+```Kotlin
 val answer0 = pushSDK.unregisterAllDevices()
 Log.d("TAG", answer0.toString())
 ```
@@ -301,7 +301,7 @@ All this functions are available from PushSDK class. For using it, create this c
 
 ***
 * new device registration. Register your device on push server
-```
+```Kotlin
 fun registerNewDevice(
         clientAPIKey: String,
         appFingerprint: String,
@@ -311,37 +311,37 @@ fun registerNewDevice(
     ): PushServerAnswerRegister
 ```
 * update firebase token on push server
-```
+```Kotlin
 fun updateRegistration(): PushServerAnswerGeneral
 ```
 * clear local device on server. This function clear on push server only locally saved device id
-```
+```Kotlin
 fun unregisterCurrentDevice(): PushServerAnswerGeneral
 ```
 * clear all devices registered with current msisdn
-```
+```Kotlin
 fun unregisterAllDevices(): PushServerAnswerGeneral
 ```
 * get message history. Returns all messages for specific period in seconds
-```
+```Kotlin
 fun getMessageHistory(periodInSeconds: Int): PushServerAnswerGeneral
 ```
 * get all devices from server
-```
+```Kotlin
 fun getAllRegisteredDevices(): PushServerAnswerGeneral
 ```
 * message callback to server
-```
+```Kotlin
 fun sendMessageCallback(
         messageId: String,
         messageText: String
     ): PushServerAnswerGeneral
 ```
 * send delivery report to server
-```
+```Kotlin
 fun sendMessageDeliveryReport(messageId: String): PushServerAnswerGeneral
 ```
 * check message queue
-```
+```Kotlin
 fun checkMessageQueue(): PushServerAnswerGeneral
 ```
