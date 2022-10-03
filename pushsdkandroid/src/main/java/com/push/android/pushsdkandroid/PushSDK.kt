@@ -144,7 +144,7 @@ class PushSDK(
                     }
                 }
             })
-        }catch (e: Exception){
+        } catch (e: Exception) {
             PushSDKLogger.error(e.stackTraceToString())
         }
     }
@@ -466,45 +466,54 @@ class PushSDK(
                     pushSdkSavedDataProvider.firebaseRegistrationToken,
                     pushSdkSavedDataProvider.pushServiceRegistrationToken
                 )
-                val devices = Gson().fromJson(requestResponse.body, JsonObject::class.java)
-                    .getAsJsonArray("devices")
-                val deviceIds = JsonArray()
-                for (device in devices) {
-                    deviceIds.add(device.asJsonObject.getAsJsonPrimitive("id").asString)
-                }
-                PushSDKLogger.debug(context, "generated deviceIds: $deviceIds")
-                val revokeRequestResponse: PushServerApiResponse = apiHandler.unregisterDevice(
-                    deviceIds.toString(),
-                    pushSdkSavedDataProvider.firebaseRegistrationToken, //_xPushSessionId
-                    pushSdkSavedDataProvider.pushServiceRegistrationToken
-                )
-                when (revokeRequestResponse.code) {
-                    200 -> {
-                        clearData()
-                        response = PushServerAnswerGeneral(
-                            revokeRequestResponse.code,
-                            PushSDKAnswerResult.OK,
-                            "Success",
-                            "{\"devices\":\"$deviceIds\"}"
-                        )
+                if (requestResponse.code == 200) {
+                    val devices = Gson().fromJson(requestResponse.body, JsonObject::class.java)
+                        .getAsJsonArray("devices")
+                    val deviceIds = JsonArray()
+                    for (device in devices) {
+                        deviceIds.add(device.asJsonObject.getAsJsonPrimitive("id").asString)
                     }
-                    401 -> {
-                        clearData()
-                        response = PushServerAnswerGeneral(
-                            revokeRequestResponse.code,
-                            PushSDKAnswerResult.FAILED,
-                            "Auth token is probably dead. Try to register your device again.",
-                            revokeRequestResponse.body
-                        )
+                    PushSDKLogger.debug(context, "generated deviceIds: $deviceIds")
+                    val revokeRequestResponse: PushServerApiResponse = apiHandler.unregisterDevice(
+                        deviceIds.toString(),
+                        pushSdkSavedDataProvider.firebaseRegistrationToken, //_xPushSessionId
+                        pushSdkSavedDataProvider.pushServiceRegistrationToken
+                    )
+                    when (revokeRequestResponse.code) {
+                        200 -> {
+                            clearData()
+                            response = PushServerAnswerGeneral(
+                                revokeRequestResponse.code,
+                                PushSDKAnswerResult.OK,
+                                "Success",
+                                "{\"devices\":\"$deviceIds\"}"
+                            )
+                        }
+                        401 -> {
+                            clearData()
+                            response = PushServerAnswerGeneral(
+                                revokeRequestResponse.code,
+                                PushSDKAnswerResult.FAILED,
+                                "Auth token is probably dead. Try to register your device again.",
+                                revokeRequestResponse.body
+                            )
+                        }
+                        else -> {
+                            response = PushServerAnswerGeneral(
+                                revokeRequestResponse.code,
+                                PushSDKAnswerResult.FAILED,
+                                "Error",
+                                "{\"devices\":\"$deviceIds\"}"
+                            )
+                        }
                     }
-                    else -> {
-                        response = PushServerAnswerGeneral(
-                            revokeRequestResponse.code,
-                            PushSDKAnswerResult.FAILED,
-                            "Error",
-                            "{\"devices\":\"$deviceIds\"}"
-                        )
-                    }
+                }else{
+                    response = PushServerAnswerGeneral(
+                        710,
+                        PushSDKAnswerResult.FAILED,
+                        "Unknown error",
+                        "unknown"
+                    )
                 }
             } else {
                 response = PushServerAnswerGeneral(
