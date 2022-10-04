@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - RDGMS-473-integration-of-android-sdk-with-ci
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
