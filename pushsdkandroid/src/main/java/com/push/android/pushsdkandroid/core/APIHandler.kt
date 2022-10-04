@@ -3,15 +3,13 @@ package com.push.android.pushsdkandroid.core
 import android.content.Context
 import com.push.android.pushsdkandroid.utils.Info
 import com.push.android.pushsdkandroid.utils.PushSDKLogger
-import com.push.android.pushsdkandroid.models.PushKDataApi
-import java.io.DataOutputStream
+import com.push.android.pushsdkandroid.models.PushServerApiResponse
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLSocketFactory
 
 /**
  * Communication with push rest server (REST API)
@@ -23,22 +21,24 @@ internal class APIHandler(private val context: Context) {
 
     //parameters for procedures
     private val osVersion = Info.getAndroidVersion()
+    private val deviceName = Info.getDeviceName()
+    private val osType = Info.getOSType()
 
-    var headerClientApiKey = "X-Msghub-Client-API-Key"
-    var headerAppFingerprint = "X-Msghub-App-Fingerprint"
-    var headerSessionId = "X-Msghub-Session-Id"
-    var headerTimestamp = "X-Msghub-Timestamp"
-    var headerAuthToken = "X-Msghub-Auth-Token"
+    private var headerClientApiKey = "X-Msghub-Client-API-Key"
+    private var headerAppFingerprint = "X-Msghub-App-Fingerprint"
+    private var headerSessionId = "X-Msghub-Session-Id"
+    private var headerTimestamp = "X-Msghub-Timestamp"
+    private var headerAuthToken = "X-Msghub-Auth-Token"
 
     //should start with slash
-    var deviceUpdatePath = "/device/update"
-    var deviceRegistrationPath = "/device/registration"
-    var deviceRevokePath = "/device/revoke"
-    var getDeviceAllPath = "/device/all"
-    var messageCallbackPath = "/message/callback"
-    var messageDeliveryReportPath = "/message/dr"
-    var messageQueuePath = "/message/queue"
-    var messageHistoryPath = "/message/history"
+    private var deviceUpdatePath = "/device/update"
+    private var deviceRegistrationPath = "/device/registration"
+    private var deviceRevokePath = "/device/revoke"
+    private var getDeviceAllPath = "/device/all"
+    private var messageCallbackPath = "/message/callback"
+    private var messageDeliveryReportPath = "/message/dr"
+    private var messageQueuePath = "/message/queue"
+    private var messageHistoryPath = "/message/history"
 
     /**
      * Enum of possible paths
@@ -59,19 +59,19 @@ internal class APIHandler(private val context: Context) {
      * Get full URL path, e.g. https://example.io/api/2.3/message/dr
      * @param path which path to get full URL for
      */
-    fun getFullURLFor(path: ApiPaths): String {
+    private fun getFullURLFor(path: ApiPaths): String {
         return URI(
             "${pushSdkSavedDataProvider.baseApiUrl}${
-            when (path) {
-                ApiPaths.DEVICE_UPDATE -> deviceUpdatePath
-                ApiPaths.DEVICE_REGISTRATION -> deviceRegistrationPath
-                ApiPaths.DEVICE_REVOKE -> deviceRevokePath
-                ApiPaths.GET_DEVICE_ALL -> getDeviceAllPath
-                ApiPaths.MESSAGE_CALLBACK -> messageCallbackPath
-                ApiPaths.MESSAGE_DELIVERY_REPORT -> messageDeliveryReportPath
-                ApiPaths.MESSAGE_QUEUE -> messageQueuePath
-                ApiPaths.MESSAGE_HISTORY -> messageHistoryPath
-            }
+                when (path) {
+                    ApiPaths.DEVICE_UPDATE -> deviceUpdatePath
+                    ApiPaths.DEVICE_REGISTRATION -> deviceRegistrationPath
+                    ApiPaths.DEVICE_REVOKE -> deviceRevokePath
+                    ApiPaths.GET_DEVICE_ALL -> getDeviceAllPath
+                    ApiPaths.MESSAGE_CALLBACK -> messageCallbackPath
+                    ApiPaths.MESSAGE_DELIVERY_REPORT -> messageDeliveryReportPath
+                    ApiPaths.MESSAGE_QUEUE -> messageQueuePath
+                    ApiPaths.MESSAGE_HISTORY -> messageHistoryPath
+                }
             }"
         ).normalize().toString()
     }
@@ -89,7 +89,7 @@ internal class APIHandler(private val context: Context) {
             val bytes = sss.toByteArray()
             val md = MessageDigest.getInstance("SHA-256")
             val digest = md.digest(bytes)
-            val resp: String = digest.fold("", { str, it -> str + "%02x".format(it) })
+            val resp: String = digest.fold("") { str, it -> str + "%02x".format(it) }
             PushSDKLogger.debug(context, "hashing successful, input: $sss, output: $resp")
             resp
         } catch (e: Exception) {
@@ -109,66 +109,64 @@ internal class APIHandler(private val context: Context) {
         method: SupportedRestMethods,
         url: URL,
         postData: String = ""
-    ): PushKDataApi {
-        PushSDKLogger.debug(context, "calling makeRequest() with params:\n" +
-                "headers $headers\n" +
-                "method $method\n" +
-                "url $url\n" +
-                "postData $postData")
-
+    ): PushServerApiResponse {
+        PushSDKLogger.debug(
+            context, "Calling makeRequest with parameters:\n" +
+                    "headers: $headers\n" +
+                    "method: $method\n" +
+                    "url: $url\n" +
+                    "post data: $postData"
+        )
         var requestResponseData = String()
         var requestResponseCode = 0
-        val threadNetF3 = Thread(Runnable {
+
+        val requestThread = Thread {
             try {
-                //Build connection
-                val connectorWebPlatform = when (url.protocol) {
+                val connection = when (url.protocol) {
+                    "https" -> {
+                        url.openConnection() as HttpsURLConnection
+                    }
                     "http" -> {
                         url.openConnection() as HttpURLConnection
-                    }
-                    "https" -> {
-                        (url.openConnection() as HttpsURLConnection).also {
-                            it.sslSocketFactory =
-                                SSLSocketFactory.getDefault() as SSLSocketFactory
-                        }
                     }
                     else -> {
                         PushSDKLogger.error("Unknown protocol used for api URL. The only supported protocols are: http, https")
                         throw IllegalArgumentException("Change your API URL protocol. The only supported protocols are: http, https")
                     }
                 }
+                connection.requestMethod = method.name
+
                 //set headers
-                connectorWebPlatform.setRequestProperty("Content-Language", "en-US")
-                connectorWebPlatform.setRequestProperty("Content-Type", "application/json")
+                connection.setRequestProperty("Content-Language", "en-US")
+                connection.setRequestProperty("Content-Type", "application/json")
                 for (header in headers) {
-                    connectorWebPlatform.setRequestProperty(header.key, header.value)
+                    connection.setRequestProperty(header.key, header.value)
                 }
-                //request logic
-                with(connectorWebPlatform) {
-                    requestMethod = method.name  //default is GET
+
+                with(connection) {
+                    requestMethod = method.name
                     when (method) {
                         SupportedRestMethods.GET -> {
                             requestResponseCode = responseCode
                             inputStream.bufferedReader().use {
                                 requestResponseData = it.readLine().toString()
+
+                                it.close()
                             }
-                            PushSDKLogger.debugApiRequest(
+                            PushSDKLogger.debug(
                                 context,
-                                requestMethod,
-                                url,
-                                headers,
-                                postData,
-                                requestResponseCode,
-                                requestResponseData
+                                "requestResponseCode: $requestResponseCode\n" +
+                                        "requestResponseData: $requestResponseData"
                             )
                         }
                         SupportedRestMethods.POST -> {
                             doOutput = true
-                            val wr = DataOutputStream(outputStream)
-                            val postData2: ByteArray =
-                                postData.toByteArray(Charset.forName("UTF-8"))
-                            wr.write(postData2)
-                            wr.flush()
-                            wr.close()
+                            outputStream.use {
+                                val postDataBytes = postData.toByteArray(Charset.forName("UTF-8"))
+                                it.write(postDataBytes)
+                                it.flush()
+                                it.close()
+                            }
                             requestResponseCode = responseCode
                             inputStream.bufferedReader().use {
                                 val response = StringBuffer()
@@ -178,28 +176,30 @@ internal class APIHandler(private val context: Context) {
                                     inputLine = it.readLine()
                                 }
                                 requestResponseData = response.toString()
+
+                                it.close()
                             }
-                            PushSDKLogger.debugApiRequest(
+                            PushSDKLogger.debug(
                                 context,
-                                requestMethod,
-                                url,
-                                headers,
-                                postData,
-                                requestResponseCode,
-                                requestResponseData
+                                "requestResponseCode: $requestResponseCode\n" +
+                                        "requestResponseData: $requestResponseData"
                             )
                         }
                     }
                 }
+
+
+            } catch (e: Exception) {
+                PushSDKLogger.error(e.stackTraceToString())
+                requestResponseCode = 710
+                requestResponseData = "unknown error"
             }
-            catch (e: Exception) {
-                e.printStackTrace()
-            }
-        })
-        threadNetF3.start()
-        threadNetF3.join()
-        val answer = PushKDataApi(requestResponseCode, requestResponseData, 0)
-        PushSDKLogger.debug(context, "makeRequest() [($method) $url]\nReturning: $answer")
+        }
+        requestThread.start()
+        requestThread.join()
+
+        val answer = PushServerApiResponse(requestResponseCode, requestResponseData, 0)
+        PushSDKLogger.debug(context, "Push server response: $answer")
         return answer
     }
 
@@ -208,11 +208,11 @@ internal class APIHandler(private val context: Context) {
     /**
      * GET request to get message history
      */
-    fun hGetMessageHistory(
+    fun getHistory(
         sessionId: String,
         authToken: String,
         periodInSeconds: Int
-    ): PushKDataApi {
+    ): PushServerApiResponse {
         val currentTimeSeconds = System.currentTimeMillis() / 1000L
         val headers = mutableMapOf<String, String>()
         headers[headerSessionId] = sessionId
@@ -230,7 +230,7 @@ internal class APIHandler(private val context: Context) {
     /**
      * GET request to get all registered devices
      */
-    fun hGetDeviceAll(sessionId: String, authToken: String): PushKDataApi {
+    fun getDeviceAll(sessionId: String, authToken: String): PushServerApiResponse {
         val currentTimeSeconds = System.currentTimeMillis() / 1000L
         val headers = mutableMapOf<String, String>()
         headers[headerSessionId] = sessionId
@@ -249,12 +249,12 @@ internal class APIHandler(private val context: Context) {
     /**
      * POST request to revoke registration
      */
-    fun hDeviceRevoke(
+    fun unregisterDevice(
         deviceList: String,
         sessionId: String,
         authToken: String
-    ): PushKDataApi {
-        val message = "{\"devices\":$deviceList}"
+    ): PushServerApiResponse {
+        val body = "{\"devices\":$deviceList}"
 
         val currentTimeSeconds = System.currentTimeMillis() / 1000L
         val headers = mutableMapOf<String, String>()
@@ -265,23 +265,21 @@ internal class APIHandler(private val context: Context) {
             headers,
             SupportedRestMethods.POST,
             URL(getFullURLFor(ApiPaths.DEVICE_REVOKE)),
-            message
+            body
         )
     }
 
     /**
      * POST request to update device registration
      */
-    fun hDeviceUpdate(
+    fun updateRegistration(
         authToken: String,
         sessionId: String,
-        deviceName: String,
-        deviceType: String,
-        osType: String,
         sdkVersion: String,
-        fcmToken: String
-    ): PushKDataApi {
-        val message =
+        fcmToken: String,
+        deviceType: String
+    ): PushServerApiResponse {
+        val body =
             "{\"fcmToken\": \"$fcmToken\",\"osType\": \"$osType\",\"osVersion\": \"$osVersion\",\"deviceType\": \"$deviceType\",\"deviceName\": \"$deviceName\",\"sdkVersion\": \"$sdkVersion\" }"
 
         val currentTimeSeconds = System.currentTimeMillis() / 1000L
@@ -293,20 +291,20 @@ internal class APIHandler(private val context: Context) {
             headers,
             SupportedRestMethods.POST,
             URL(getFullURLFor(ApiPaths.DEVICE_UPDATE)),
-            message
+            body
         )
     }
 
     /**
      * Message callback - POST request
      */
-    fun hMessageCallback(
+    fun messageCallback(
         messageId: String,
         pushAnswer: String,
         sessionId: String,
         authToken: String
-    ): PushKDataApi {
-        val message = "{\"messageId\": \"$messageId\", \"answer\": \"$pushAnswer\"}"
+    ): PushServerApiResponse {
+        val body = "{\"messageId\": \"$messageId\", \"answer\": \"$pushAnswer\"}"
 
         val currentTimeSeconds = System.currentTimeMillis() / 1000L
         val headers = mutableMapOf<String, String>()
@@ -317,7 +315,7 @@ internal class APIHandler(private val context: Context) {
             headers,
             SupportedRestMethods.POST,
             URL(getFullURLFor(ApiPaths.MESSAGE_CALLBACK)),
-            message
+            body
         )
     }
 
@@ -330,8 +328,8 @@ internal class APIHandler(private val context: Context) {
         messageId: String,
         sessionId: String,
         authToken: String
-    ): PushKDataApi {
-        val message = "{\"messageId\": \"$messageId\"}"
+    ): PushServerApiResponse {
+        val body = "{\"messageId\": \"$messageId\"}"
 
         val currentTimeSeconds = System.currentTimeMillis() / 1000L
         val headers = mutableMapOf<String, String>()
@@ -342,7 +340,7 @@ internal class APIHandler(private val context: Context) {
             headers,
             SupportedRestMethods.POST,
             URL(getFullURLFor(ApiPaths.MESSAGE_DELIVERY_REPORT)),
-            message
+            body
         )
     }
 
@@ -353,8 +351,8 @@ internal class APIHandler(private val context: Context) {
     internal fun getDevicePushMsgQueue(
         sessionId: String,
         authToken: String
-    ): PushKDataApi {
-        val message = "{}"
+    ): PushServerApiResponse {
+        val body = "{}"
 
         val currentTimeSeconds = System.currentTimeMillis() / 1000L
         val headers = mutableMapOf<String, String>()
@@ -365,36 +363,35 @@ internal class APIHandler(private val context: Context) {
             headers,
             SupportedRestMethods.POST,
             URL(getFullURLFor(ApiPaths.MESSAGE_QUEUE)),
-            message
+            body
         )
     }
 
     /**
      * Registration POST request
      */
-    fun hDeviceRegister(
+    fun registerDevice(
         apiKey: String,
         sessionId: String,
         appFingerprint: String,
-        deviceName: String,
-        deviceType: String,
-        osType: String,
         sdkVersion: String,
         userPassword: String,
-        userPhone: String
-    ): PushKDataApi {
-        val message =
+        userPhone: String,
+        deviceType: String
+    ): PushServerApiResponse {
+        val body =
             "{\"userPhone\":\"$userPhone\",\"userPass\":\"$userPassword\",\"osType\":\"$osType\",\"osVersion\":\"$osVersion\",\"deviceType\":\"$deviceType\",\"deviceName\":\"$deviceName\",\"sdkVersion\":\"$sdkVersion\"}"
 
         val headers = mutableMapOf<String, String>()
         headers[headerSessionId] = sessionId
         headers[headerClientApiKey] = apiKey
         headers[headerAppFingerprint] = appFingerprint
+
         return makeRequest(
             headers,
             SupportedRestMethods.POST,
             URL(getFullURLFor(ApiPaths.DEVICE_REGISTRATION)),
-            message
+            body
         )
     }
 }

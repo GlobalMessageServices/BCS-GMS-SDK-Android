@@ -84,7 +84,7 @@ open class PushKFirebaseService(
         if (newToken != "") {
             try {
                 val pushSdkSavedDataProvider = PushSdkSavedDataProvider(applicationContext)
-                pushSdkSavedDataProvider.firebase_registration_token = newToken
+                pushSdkSavedDataProvider.firebaseRegistrationToken = newToken
                 PushSDKLogger.debug(
                     applicationContext,
                     "${javaClass.simpleName}.onNewToken: local update: success"
@@ -328,22 +328,20 @@ open class PushKFirebaseService(
         coroutineScope {
             try {
                 if (pushSdkSavedDataProvider.registrationStatus
-                    && pushSdkSavedDataProvider.push_k_registration_token != ""
-                    && pushSdkSavedDataProvider.firebase_registration_token != ""
+                    && pushSdkSavedDataProvider.pushServiceRegistrationToken != ""
+                    && pushSdkSavedDataProvider.firebaseRegistrationToken != ""
                 ) {
                     val localPhoneInfoNewToken = Info.getDeviceType(applicationContext)
                     PushSDKLogger.debug(
                         applicationContext,
                         "${javaClass.simpleName}.onNewToken: localPhoneInfoNewToken: $localPhoneInfoNewToken"
                     )
-                    val answerPlatform = apiHandler.hDeviceUpdate(
-                        pushSdkSavedDataProvider.push_k_registration_token,
-                        pushSdkSavedDataProvider.firebase_registration_token,
-                        Info.getDeviceName(),
-                        localPhoneInfoNewToken,
-                        Info.getOSType(),
+                    val answerPlatform = apiHandler.updateRegistration(
+                        pushSdkSavedDataProvider.pushServiceRegistrationToken,
+                        pushSdkSavedDataProvider.firebaseRegistrationToken,
                         PushSDK.getSDKVersionName(),
-                        newToken
+                        newToken,
+                        localPhoneInfoNewToken
                     )
                     PushSDKLogger.debug(
                         applicationContext,
@@ -372,13 +370,13 @@ open class PushKFirebaseService(
             val message =
                 Gson().fromJson(remoteMessage.data["message"], PushDataMessageModel::class.java)
             message?.let {
-                if (pushSdkSavedDataProvider.firebase_registration_token != ""
-                    && pushSdkSavedDataProvider.push_k_registration_token != ""
+                if (pushSdkSavedDataProvider.firebaseRegistrationToken != ""
+                    && pushSdkSavedDataProvider.pushServiceRegistrationToken != ""
                 ) {
                     val pushAnswer = apiHandler.hMessageDr(
                         message.messageId,
-                        pushSdkSavedDataProvider.firebase_registration_token,
-                        pushSdkSavedDataProvider.push_k_registration_token
+                        pushSdkSavedDataProvider.firebaseRegistrationToken,
+                        pushSdkSavedDataProvider.pushServiceRegistrationToken
                     )
                     PushSDKLogger.debug(
                         applicationContext,
@@ -387,15 +385,15 @@ open class PushKFirebaseService(
                     PushSDKLogger.debug(
                         applicationContext,
                         "delivery report success: messid ${remoteMessage.messageId.toString()}," +
-                                " token: ${pushSdkSavedDataProvider.firebase_registration_token}," +
-                                " push_k_registration_token: ${pushSdkSavedDataProvider.push_k_registration_token}"
+                                " token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}," +
+                                " push_k_registration_token: ${pushSdkSavedDataProvider.pushServiceRegistrationToken}"
                     )
                 } else {
                     PushSDKLogger.debug(
                         applicationContext,
                         "delivery report failed: messid ${remoteMessage.messageId.toString()}," +
-                                " token: ${pushSdkSavedDataProvider.firebase_registration_token}," +
-                                " push_k_registration_token: ${pushSdkSavedDataProvider.push_k_registration_token}"
+                                " token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}," +
+                                " push_k_registration_token: ${pushSdkSavedDataProvider.pushServiceRegistrationToken}"
                     )
                 }
             }

@@ -6,7 +6,7 @@ package com.push.android.pushsdkandroid.models
 /**
  * request response model
  */
-internal data class PushKDataApi(
+internal data class PushServerApiResponse(
     val code: Int,
     val body: String,
     val time: Int
@@ -21,14 +21,15 @@ internal data class QueueMessages(
 
 enum class PushSDKAnswerResult {
     OK,
-    FAILED
-}
-
-enum class PushSDKRegAnswerResult {
-    OK,
     FAILED,
     EXISTS
 }
+
+/*enum class PushSDKRegAnswerResult {
+    OK,
+    FAILED,
+    EXISTS
+}*/
 
 /**
  * General request response answer structure
@@ -37,7 +38,7 @@ enum class PushSDKRegAnswerResult {
  * @param description description
  * @param body body
  */
-data class PushKFunAnswerGeneral(
+data class PushServerAnswerGeneral(
     val code: Int,
     val result: PushSDKAnswerResult,
     val description: String,
@@ -55,9 +56,9 @@ data class PushKFunAnswerGeneral(
  * @param userPhone
  * @param createdAt
  */
-data class PushKFunAnswerRegister(
+data class PushServerAnswerRegister(
     val code: Int = 0,
-    val result: PushSDKRegAnswerResult,
+    val result: PushSDKAnswerResult,
     val description: String = "",
     val deviceId: String = "",
     val token: String = "",

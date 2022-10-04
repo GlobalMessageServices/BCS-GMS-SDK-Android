@@ -3,7 +3,8 @@ package com.push.android.pushsdkandroid
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.google.firebase.iid.FirebaseInstanceId
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -11,12 +12,12 @@ import com.push.android.pushsdkandroid.utils.Info
 import com.push.android.pushsdkandroid.core.*
 import com.push.android.pushsdkandroid.utils.PushSDKLogger
 import com.push.android.pushsdkandroid.models.*
-import com.push.android.pushsdkandroid.models.PushKDataApi
+import com.push.android.pushsdkandroid.models.PushServerApiResponse
 import kotlin.properties.Delegates
 
 /**
  * Main class, used for initialization. Only works with API v3.0
- * @see PushKFunAnswerGeneral
+ * @see PushServerAnswerGeneral
  * @param context the context you would like to use
  * @param baseApiUrl base api url, like "https://example.io/api/3.0/"
  * @param log_level (optional) logging level
@@ -33,10 +34,6 @@ class PushSDK(
      */
     companion object {
 
-        /**
-         * Logging tag
-         */
-        const val TAG_LOGGING = "PushPushSDK"
 
         /**
          * Get SDK version
@@ -104,7 +101,13 @@ class PushSDK(
                 updateRegistration()
             }
         } catch (e: Exception) {
-            PushSDKLogger.error("PushSDK.init registration update problem:\n${Log.getStackTraceString(e)}")
+            PushSDKLogger.error(
+                "PushSDK.init registration update problem:\n${
+                    Log.getStackTraceString(
+                        e
+                    )
+                }"
+            )
         }
     }
 
@@ -112,27 +115,37 @@ class PushSDK(
      * Update FCM token
      */
     private fun updateFCMToken() {
-        //fixme listener will not be called instantly, so it won't update synchronously
-        PushSDKLogger.debug(context, "Updating FCM token")
-        FirebaseInstanceId.getInstance().instanceId.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                task.result?.let {
-                    if (it.token != "" && it.token != pushSdkSavedDataProvider.firebase_registration_token) {
+        try {
+            FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    PushSDKLogger.debug(
+                        context,
+                        "Fetching FCM registration token failed: ${task.exception}"
+                    )
+                } else {
+                    // Get new FCM registration token
+                    val fcmToken = task.result
+
+                    if (fcmToken.isNotEmpty() && !fcmToken.equals(pushSdkSavedDataProvider.firebaseRegistrationToken)) {
+                        PushSDKLogger.debug(
+                            context,
+                            "Old FCM token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}"
+                        )
+                        PushSDKLogger.debug(context, "New FCM token: $fcmToken")
+                        pushSdkSavedDataProvider.firebaseRegistrationToken = fcmToken
                         PushSDKLogger.debug(context, "FCM token updated successfully.")
-                        PushSDKLogger.debug(context, "Old FCM token: ${pushSdkSavedDataProvider.firebase_registration_token}")
-                        PushSDKLogger.debug(context, "New FCM token: ${it.token}")
-                        pushSdkSavedDataProvider.firebase_registration_token = it.token
-                    }
-                    else {
+                    } else {
                         PushSDKLogger.debug(context, "New FCM token is either empty or up-to-date")
-                        PushSDKLogger.debug(context, "Current FCM token: ${pushSdkSavedDataProvider.firebase_registration_token}")
-                        PushSDKLogger.debug(context, "Received FCM token: ${it.token}")
+                        PushSDKLogger.debug(
+                            context,
+                            "Current FCM token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}"
+                        )
+                        PushSDKLogger.debug(context, "Received FCM token: $fcmToken")
                     }
                 }
-            }
-            else {
-                PushSDKLogger.error("Unable to update FCM token, task is not successful")
-            }
+            })
+        } catch (e: Exception) {
+            PushSDKLogger.error(e.stackTraceToString())
         }
     }
 
@@ -143,28 +156,30 @@ class PushSDK(
         PushSDKLogger.debug(context, "Attempting to clear local registration data")
         pushSdkSavedDataProvider.registrationStatus = false
         pushSdkSavedDataProvider.deviceId = ""
-        pushSdkSavedDataProvider.push_k_user_id = ""
+        pushSdkSavedDataProvider.pushServerUserId = ""
+        pushSdkSavedDataProvider.userMsisdn = ""
+        pushSdkSavedDataProvider.pushServiceRegistrationDate = ""
     }
 
     /**
      * Save various params locally
      */
-    private fun hSdkInitSaveToLocal(
-            deviceId: String,
-            push_k_user_msisdn: String,
-            push_k_user_Password: String,
-            push_k_registration_token: String,
-            push_k_user_id: String,
-            push_k_registration_createdAt: String,
-            registrationStatus: Boolean
+    private fun saveDataLocally(
+        deviceId: String,
+        push_k_user_msisdn: String,
+        push_k_user_Password: String,
+        push_k_registration_token: String,
+        push_k_user_id: String,
+        push_k_registration_createdAt: String,
+        registrationStatus: Boolean
     ) {
         PushSDKLogger.debug(context, "Saving params locally")
         pushSdkSavedDataProvider.deviceId = deviceId
-        pushSdkSavedDataProvider.push_k_user_msisdn = push_k_user_msisdn
-        pushSdkSavedDataProvider.push_k_user_Password = push_k_user_Password
-        pushSdkSavedDataProvider.push_k_registration_createdAt = push_k_registration_createdAt
-        pushSdkSavedDataProvider.push_k_user_id = push_k_user_id
-        pushSdkSavedDataProvider.push_k_registration_token = push_k_registration_token
+        pushSdkSavedDataProvider.userMsisdn = push_k_user_msisdn
+        pushSdkSavedDataProvider.userPassword = push_k_user_Password
+        pushSdkSavedDataProvider.pushServiceRegistrationDate = push_k_registration_createdAt
+        pushSdkSavedDataProvider.pushServerUserId = push_k_user_id
+        pushSdkSavedDataProvider.pushServiceRegistrationToken = push_k_registration_token
         pushSdkSavedDataProvider.registrationStatus = registrationStatus
     }
 
@@ -207,69 +222,75 @@ class PushSDK(
         userMsisdn: String,
         userPassword: String,
         firebaseToken: String = ""
-    ): PushKFunAnswerRegister {
-        PushSDKLogger.debug(context, "calling registerNewDevice() with params:\n" +
-                "clientAPIKey $clientAPIKey\n" +
-                "appFingerprint $appFingerprint\n" +
-                "userMsisdn $userMsisdn\n" +
-                "userPassword $userPassword" +
-                "firebaseToken $firebaseToken")
+    ): PushServerAnswerRegister {
+        PushSDKLogger.debug(
+            context, "calling registerNewDevice with params:\n" +
+                    "clientAPIKey $clientAPIKey\n" +
+                    "appFingerprint $appFingerprint\n" +
+                    "userMsisdn $userMsisdn\n" +
+                    "userPassword $userPassword" +
+                    "firebaseToken $firebaseToken"
+        )
+        var response: PushServerAnswerRegister
         try {
             updateFCMToken()
-            val firebaseTokenToUse = when (firebaseToken) {
-                "" -> {
-                    pushSdkSavedDataProvider.firebase_registration_token
-                }
-                else -> {
-                    firebaseToken
-                }
+            val firebaseTokenToUse = if (firebaseToken == "") {
+                pushSdkSavedDataProvider.firebaseRegistrationToken
+            } else {
+                firebaseToken
             }
+
             if (pushSdkSavedDataProvider.registrationStatus) {
-                return PushKFunAnswerRegister(
-                        code = 701,
-                        deviceId = pushSdkSavedDataProvider.deviceId,
-                        token = pushSdkSavedDataProvider.push_k_registration_token,
-                        userId = pushSdkSavedDataProvider.push_k_user_id,
-                        userPhone = pushSdkSavedDataProvider.push_k_user_msisdn,
-                        createdAt = pushSdkSavedDataProvider.push_k_registration_createdAt,
-                        result = PushSDKRegAnswerResult.EXISTS,
-                        description = "Device already registered. Nothing to do"
+                response = PushServerAnswerRegister(
+                    code = 701,
+                    deviceId = pushSdkSavedDataProvider.deviceId,
+                    token = pushSdkSavedDataProvider.pushServiceRegistrationToken,
+                    userId = pushSdkSavedDataProvider.pushServerUserId,
+                    userPhone = pushSdkSavedDataProvider.userMsisdn,
+                    createdAt = pushSdkSavedDataProvider.pushServiceRegistrationDate,
+                    result = PushSDKAnswerResult.EXISTS,
+                    description = "Device already registered."
                 )
-            }
-            else if (firebaseTokenToUse == "" || firebaseTokenToUse == " ") {
-                return PushKFunAnswerRegister(
+                PushSDKLogger.debug(context, "registerNewDevice response: $response")
+                return response
+            } else {
+                if (firebaseTokenToUse.trim() == "") {
+                    response = PushServerAnswerRegister(
                         code = 901,
                         description = "X_Push_Session_Id is empty. Maybe firebase registration problem",
-                        result = PushSDKRegAnswerResult.FAILED,
+                        result = PushSDKAnswerResult.FAILED,
                         deviceId = "unknown",
                         token = "unknown",
                         userId = "unknown",
                         userPhone = "unknown",
                         createdAt = "unknown"
-                )
-            }
-            else {
-                val requestResponse = apiHandler.hDeviceRegister(
+                    )
+                    PushSDKLogger.debug(context, "registerNewDevice response: $response")
+                    return response
+                } else {
+                    val requestResponse = apiHandler.registerDevice(
                         clientAPIKey,
                         firebaseTokenToUse,
                         appFingerprint,
-                        Info.getDeviceName(),
-                        pushDeviceType,
-                        Info.getOSType(),
                         getSDKVersionName(),
                         userPassword,
-                        userMsisdn
-                )
-                return when (requestResponse.code) {
-                    200 -> {
-                        val parent = Gson().fromJson(requestResponse.body, JsonObject::class.java)
-                        val deviceId = parent.getAsJsonObject("device").get("deviceId").asString
-                        val token = parent.getAsJsonObject("session").get("token").asString
-                        val userId = parent.getAsJsonObject("profile").get("userId").asString
-                        val userPhone = parent.getAsJsonObject("profile").get("userPhone").asString
-                        val createdAt = parent.getAsJsonObject("profile").get("createdAt").asString
+                        userMsisdn,
+                        pushDeviceType
+                    )
 
-                        hSdkInitSaveToLocal(
+                    when (requestResponse.code) {
+                        200 -> {
+                            val parent =
+                                Gson().fromJson(requestResponse.body, JsonObject::class.java)
+                            val deviceId = parent.getAsJsonObject("device").get("deviceId").asString
+                            val token = parent.getAsJsonObject("session").get("token").asString
+                            val userId = parent.getAsJsonObject("profile").get("userId").asString
+                            val userPhone =
+                                parent.getAsJsonObject("profile").get("userPhone").asString
+                            val createdAt =
+                                parent.getAsJsonObject("profile").get("createdAt").asString
+
+                            saveDataLocally(
                                 deviceId,
                                 userMsisdn,
                                 userPassword,
@@ -277,138 +298,156 @@ class PushSDK(
                                 userId,
                                 createdAt,
                                 true
-                        )
+                            )
 
-                        PushKFunAnswerRegister(
+                            response = PushServerAnswerRegister(
                                 code = 200,
                                 description = "Success",
-                                result = PushSDKRegAnswerResult.OK,
+                                result = PushSDKAnswerResult.OK,
                                 deviceId = deviceId,
                                 token = token,
                                 userId = userId,
                                 userPhone = userPhone,
                                 createdAt = createdAt
-                        )
-                    }
-                    401 -> {
-                        PushKFunAnswerRegister(
+                            )
+                        }
+                        401 -> {
+                            response = PushServerAnswerRegister(
                                 code = 401,
                                 description = "(Client error) authentication error, probably errors",
-                                result = PushSDKRegAnswerResult.FAILED,
+                                result = PushSDKAnswerResult.FAILED,
                                 deviceId = "unknown",
                                 token = "unknown",
                                 userId = "unknown",
                                 userPhone = "unknown",
                                 createdAt = "unknown"
-                        )
-                    }
-                    400 -> {
-                        PushKFunAnswerRegister(
+                            )
+                        }
+                        400 -> {
+                            response = PushServerAnswerRegister(
                                 code = 400,
                                 description = "(Client error) request validation error",
-                                result = PushSDKRegAnswerResult.FAILED,
+                                result = PushSDKAnswerResult.FAILED,
                                 deviceId = "unknown",
                                 token = "unknown",
                                 userId = "unknown",
                                 userPhone = "unknown",
                                 createdAt = "unknown"
-                        )
-                    }
-                    500 -> {
-                        PushKFunAnswerRegister(
+                            )
+                        }
+                        500 -> {
+                            response = PushServerAnswerRegister(
                                 code = 500,
-                                description = "(Server error)",
-                                result = PushSDKRegAnswerResult.FAILED,
+                                description = "Server error",
+                                result = PushSDKAnswerResult.FAILED,
                                 deviceId = "unknown",
                                 token = "unknown",
                                 userId = "unknown",
                                 userPhone = "unknown",
                                 createdAt = "unknown"
-                        )
-                    }
-                    else -> {
-                        PushKFunAnswerRegister(
+                            )
+                        }
+                        else -> {
+                            response = PushServerAnswerRegister(
                                 code = 710,
                                 description = "Unknown error",
-                                result = PushSDKRegAnswerResult.FAILED,
+                                result = PushSDKAnswerResult.FAILED,
                                 deviceId = "unknown",
                                 token = "unknown",
                                 userId = "unknown",
                                 userPhone = "unknown",
                                 createdAt = "unknown"
-                        )
+                            )
+                        }
                     }
                 }
             }
-        }
-        catch (e: Exception) {
-            return PushKFunAnswerRegister(
-                    code = 700,
-                    description = "Internal SDK error",
-                    result = PushSDKRegAnswerResult.FAILED,
-                    deviceId = "unknown",
-                    token = "unknown",
-                    userId = "unknown",
-                    userPhone = "unknown",
-                    createdAt = "unknown"
+            PushSDKLogger.debug(context, "registerNewDevice response: $response")
+            return response
+        } catch (e: Exception) {
+            PushSDKLogger.error(e.toString())
+            return PushServerAnswerRegister(
+                code = 700,
+                description = "Internal SDK error",
+                result = PushSDKAnswerResult.FAILED,
+                deviceId = "unknown",
+                token = "unknown",
+                userId = "unknown",
+                userPhone = "unknown",
+                createdAt = "unknown"
             )
+
         }
     }
 
     /**
      * Unregister the current device from database (if registered)
      */
-    fun unregisterCurrentDevice(): PushKFunAnswerGeneral {
-        PushSDKLogger.debug(context, "calling unregisterCurrentDevice()")
+    fun unregisterCurrentDevice(): PushServerAnswerGeneral {
+        PushSDKLogger.debug(context, "calling unregisterCurrentDevice")
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
-            val xPushSessionId = pushSdkSavedDataProvider.firebase_registration_token
+            val xPushSessionId = pushSdkSavedDataProvider.firebaseRegistrationToken
             if (pushSdkSavedDataProvider.registrationStatus) {
-                val requestResponse = apiHandler.hDeviceRevoke(
+                val requestResponse = apiHandler.unregisterDevice(
                     "[\"${pushSdkSavedDataProvider.deviceId}\"]",
                     xPushSessionId,
-                    pushSdkSavedDataProvider.push_k_registration_token
+                    pushSdkSavedDataProvider.pushServiceRegistrationToken
                 )
                 val deviceId = pushSdkSavedDataProvider.deviceId
-                return when (requestResponse.code) {
+                when (requestResponse.code) {
                     200 -> {
                         clearData()
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.OK,
-                                "Success",
-                                "{\"device\":\"$deviceId\"}")
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.OK,
+                            "Success",
+                            "{\"device\":\"$deviceId\"}"
+                        )
                     }
                     401 -> {
                         clearData()
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Auth token is probably dead. Try to register your device again.",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Auth token is probably dead. Try to register your device again.",
+                            requestResponse.body
+                        )
                     }
                     else -> {
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Error",
-                                "{\"device\":\"$deviceId\"}")
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Error",
+                            "{\"device\":\"$deviceId\"}"
+                        )
                     }
                 }
             } else {
-                return PushKFunAnswerGeneral(
-                        704,
-                        PushSDKAnswerResult.FAILED,
-                        "Registration data not found",
-                        "Not registered")
-            }
-        } catch (e: Exception) {
-            PushSDKLogger.error("unregisterCurrentDevice() failed with exception: ${Log.getStackTraceString(e)}")
-            return PushKFunAnswerGeneral(
-                    710,
+                response = PushServerAnswerGeneral(
+                    704,
                     PushSDKAnswerResult.FAILED,
-                    "Unknown error",
-                    "unknown")
+                    "Registration data not found",
+                    "Not registered"
+                )
+            }
+            PushSDKLogger.debug(context, "unregisterCurrentDevice response: $response")
+            return response
+        } catch (e: Exception) {
+            PushSDKLogger.error(
+                "unregisterCurrentDevice failed with exception: ${
+                    Log.getStackTraceString(
+                        e
+                    )
+                }"
+            )
+            return PushServerAnswerGeneral(
+                710,
+                PushSDKAnswerResult.FAILED,
+                "Unknown error",
+                "unknown"
+            )
         }
     }
 
@@ -417,67 +456,90 @@ class PushSDK(
      *
      * @return PushKFunAnswerGeneral
      */
-    fun unregisterAllDevices(): PushKFunAnswerGeneral {
-        PushSDKLogger.debug(context, "calling unregisterAllDevices() with params:")
+    fun unregisterAllDevices(): PushServerAnswerGeneral {
+        PushSDKLogger.debug(context, "calling unregisterAllDevices")
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
             if (pushSdkSavedDataProvider.registrationStatus) {
-                val requestResponse = apiHandler.hGetDeviceAll(
-                        pushSdkSavedDataProvider.firebase_registration_token, //_xPushSessionId
-                        pushSdkSavedDataProvider.push_k_registration_token
+                val requestResponse = apiHandler.getDeviceAll(
+                    pushSdkSavedDataProvider.firebaseRegistrationToken,
+                    pushSdkSavedDataProvider.pushServiceRegistrationToken
                 )
-                val devices = Gson().fromJson(requestResponse.body, JsonObject::class.java)
+                if (requestResponse.code == 200) {
+                    val devices = Gson().fromJson(requestResponse.body, JsonObject::class.java)
                         .getAsJsonArray("devices")
-                val deviceIds = JsonArray()
-                for (device in devices) {
-                    deviceIds.add(device.asJsonObject.getAsJsonPrimitive("id").asString)
-                }
-                PushSDKLogger.debug(context, "generated deviceIds: $deviceIds")
-                val revokeRequestResponse: PushKDataApi = apiHandler.hDeviceRevoke(
+                    val deviceIds = JsonArray()
+                    for (device in devices) {
+                        deviceIds.add(device.asJsonObject.getAsJsonPrimitive("id").asString)
+                    }
+                    PushSDKLogger.debug(context, "generated deviceIds: $deviceIds")
+                    val revokeRequestResponse: PushServerApiResponse = apiHandler.unregisterDevice(
                         deviceIds.toString(),
-                        pushSdkSavedDataProvider.firebase_registration_token, //_xPushSessionId
-                        pushSdkSavedDataProvider.push_k_registration_token
-                )
-                return when (revokeRequestResponse.code) {
-                    200 -> {
-                        clearData()
-                        PushKFunAnswerGeneral(
+                        pushSdkSavedDataProvider.firebaseRegistrationToken, //_xPushSessionId
+                        pushSdkSavedDataProvider.pushServiceRegistrationToken
+                    )
+                    when (revokeRequestResponse.code) {
+                        200 -> {
+                            clearData()
+                            response = PushServerAnswerGeneral(
                                 revokeRequestResponse.code,
                                 PushSDKAnswerResult.OK,
                                 "Success",
-                                "{\"devices\":\"$deviceIds\"}")
-                    }
-                    401 -> {
-                        clearData()
-                        PushKFunAnswerGeneral(
+                                "{\"devices\":\"$deviceIds\"}"
+                            )
+                        }
+                        401 -> {
+                            clearData()
+                            response = PushServerAnswerGeneral(
                                 revokeRequestResponse.code,
                                 PushSDKAnswerResult.FAILED,
                                 "Auth token is probably dead. Try to register your device again.",
-                                revokeRequestResponse.body)
-                    }
-                    else -> {
-                        PushKFunAnswerGeneral(
+                                revokeRequestResponse.body
+                            )
+                        }
+                        else -> {
+                            response = PushServerAnswerGeneral(
                                 revokeRequestResponse.code,
                                 PushSDKAnswerResult.FAILED,
                                 "Error",
-                                "{\"devices\":\"$deviceIds\"}")
+                                "{\"devices\":\"$deviceIds\"}"
+                            )
+                        }
                     }
+                }else{
+                    response = PushServerAnswerGeneral(
+                        710,
+                        PushSDKAnswerResult.FAILED,
+                        "Unknown error",
+                        "unknown"
+                    )
                 }
             } else {
-                return PushKFunAnswerGeneral(
-                        704,
-                        PushSDKAnswerResult.FAILED,
-                        "Registration data not found",
-                        "Not registered")
+                response = PushServerAnswerGeneral(
+                    704,
+                    PushSDKAnswerResult.FAILED,
+                    "Registration data not found",
+                    "Not registered"
+                )
             }
+            PushSDKLogger.debug(context, "unregisterAllDevices response: $response")
+            return response
 
         } catch (e: Exception) {
-            PushSDKLogger.error("unregisterAllDevices() failed with exception: ${Log.getStackTraceString(e)}")
-            return PushKFunAnswerGeneral(
-                    710,
-                    PushSDKAnswerResult.FAILED,
-                    "Unknown error",
-                    "unknown")
+            PushSDKLogger.error(
+                "unregisterAllDevices failed with exception: ${
+                    Log.getStackTraceString(
+                        e
+                    )
+                }"
+            )
+            return PushServerAnswerGeneral(
+                710,
+                PushSDKAnswerResult.FAILED,
+                "Unknown error",
+                "unknown"
+            )
         }
     }
 
@@ -487,55 +549,72 @@ class PushSDK(
      *
      * @return PushKFunAnswerGeneral
      */
-    fun getMessageHistory(periodInSeconds: Int): PushKFunAnswerGeneral {
-        PushSDKLogger.debug(context, "calling getMessageHistory() with params:\n" +
-                "periodInSeconds $periodInSeconds")
+    fun getMessageHistory(periodInSeconds: Int): PushServerAnswerGeneral {
+        PushSDKLogger.debug(
+            context, "calling getMessageHistory with params:\n" +
+                    "periodInSeconds $periodInSeconds"
+        )
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
             if (pushSdkSavedDataProvider.registrationStatus) {
-                val requestResponse = apiHandler.hGetMessageHistory(
-                    pushSdkSavedDataProvider.firebase_registration_token, //_xPushSessionId
-                    pushSdkSavedDataProvider.push_k_registration_token,
+                val requestResponse = apiHandler.getHistory(
+                    pushSdkSavedDataProvider.firebaseRegistrationToken, //_xPushSessionId
+                    pushSdkSavedDataProvider.pushServiceRegistrationToken,
                     periodInSeconds
                 )
-                return when (requestResponse.code) {
+                when (requestResponse.code) {
                     200 -> {
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.OK,
-                                "Success",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.OK,
+                            "Success",
+                            requestResponse.body
+                        )
                     }
                     401 -> {
                         clearData()
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Auth token is probably dead. Try to register your device again.",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Auth token is probably dead. Try to register your device again.",
+                            requestResponse.body
+                        )
                     }
                     else -> {
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Error",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Error",
+                            requestResponse.body
+                        )
                     }
                 }
+
             } else {
-                return PushKFunAnswerGeneral(
-                        704,
-                        PushSDKAnswerResult.FAILED,
-                        "Registration data not found",
-                        "Not registered")
-            }
-        } catch (e: Exception) {
-            PushSDKLogger.error("getMessageHistory() failed with exception: ${Log.getStackTraceString(e)}")
-            return PushKFunAnswerGeneral(
-                    710,
+                response = PushServerAnswerGeneral(
+                    704,
                     PushSDKAnswerResult.FAILED,
-                    "Unknown error",
-                    "unknown")
+                    "Registration data not found",
+                    "Not registered"
+                )
+            }
+            PushSDKLogger.debug(context, "getMessageHistory response: $response")
+            return response
+        } catch (e: Exception) {
+            PushSDKLogger.error(
+                "getMessageHistory failed with exception: ${
+                    Log.getStackTraceString(
+                        e
+                    )
+                }"
+            )
+            return PushServerAnswerGeneral(
+                710,
+                PushSDKAnswerResult.FAILED,
+                "Unknown error",
+                "unknown"
+            )
         }
     }
 
@@ -544,53 +623,68 @@ class PushSDK(
      *
      * @return PushKFunAnswerGeneral
      */
-    fun getAllRegisteredDevices(): PushKFunAnswerGeneral {
-        PushSDKLogger.debug(context, "calling getAllRegisteredDevices()")
+    fun getAllRegisteredDevices(): PushServerAnswerGeneral {
+        PushSDKLogger.debug(context, "calling getAllRegisteredDevices")
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
             if (pushSdkSavedDataProvider.registrationStatus) {
-                val requestResponse = apiHandler.hGetDeviceAll(
-                    pushSdkSavedDataProvider.firebase_registration_token, //_xPushSessionId
-                    pushSdkSavedDataProvider.push_k_registration_token
+                val requestResponse = apiHandler.getDeviceAll(
+                    pushSdkSavedDataProvider.firebaseRegistrationToken, //_xPushSessionId
+                    pushSdkSavedDataProvider.pushServiceRegistrationToken
                 )
-                return when (requestResponse.code) {
+                when (requestResponse.code) {
                     200 -> {
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.OK,
-                                "Success",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.OK,
+                            "Success",
+                            requestResponse.body
+                        )
                     }
                     401 -> {
                         clearData()
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Auth token is probably dead. Try to register your device again.",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Auth token is probably dead. Try to register your device again.",
+                            requestResponse.body
+                        )
                     }
                     else -> {
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Error",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Error",
+                            requestResponse.body
+                        )
                     }
                 }
+
             } else {
-                return PushKFunAnswerGeneral(
-                        704,
-                        PushSDKAnswerResult.FAILED,
-                        "Registration data not found",
-                        "Not registered")
-            }
-        } catch (e: Exception) {
-            PushSDKLogger.error("getAllRegisteredDevices() failed with exception: ${Log.getStackTraceString(e)}")
-            return PushKFunAnswerGeneral(
-                    710,
+                response = PushServerAnswerGeneral(
+                    704,
                     PushSDKAnswerResult.FAILED,
-                    "Unknown error",
-                    "unknown")
+                    "Registration data not found",
+                    "Not registered"
+                )
+            }
+            PushSDKLogger.debug(context, "getAllRegisteredDevices response: $response")
+            return response
+        } catch (e: Exception) {
+            PushSDKLogger.error(
+                "getAllRegisteredDevices failed with exception: ${
+                    Log.getStackTraceString(
+                        e
+                    )
+                }"
+            )
+            return PushServerAnswerGeneral(
+                710,
+                PushSDKAnswerResult.FAILED,
+                "Unknown error",
+                "unknown"
+            )
         }
     }
 
@@ -599,58 +693,70 @@ class PushSDK(
      *
      * @return PushKFunAnswerGeneral
      */
-    fun updateRegistration(): PushKFunAnswerGeneral {
-        PushSDKLogger.debug(context, "calling updateRegistration()")
+    fun updateRegistration(): PushServerAnswerGeneral {
+        PushSDKLogger.debug(context, "calling updateRegistration")
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
             if (pushSdkSavedDataProvider.registrationStatus) {
-                val requestResponse = apiHandler.hDeviceUpdate(
-                    pushSdkSavedDataProvider.push_k_registration_token, //pushSdkSavedDataProvider.push_k_registration_token
-                    pushSdkSavedDataProvider.firebase_registration_token, // pushSdkSavedDataProvider.firebase_registration_token
-                    Info.getDeviceName(),
-                    pushDeviceType,
-                    Info.getOSType(),
+                val requestResponse = apiHandler.updateRegistration(
+                    pushSdkSavedDataProvider.pushServiceRegistrationToken, //pushSdkSavedDataProvider.push_k_registration_token
+                    pushSdkSavedDataProvider.firebaseRegistrationToken, // pushSdkSavedDataProvider.firebase_registration_token
                     getSDKVersionName(),
-                    pushSdkSavedDataProvider.firebase_registration_token
+                    pushSdkSavedDataProvider.firebaseRegistrationToken,
+                    pushDeviceType
                 )
-                return when (requestResponse.code) {
+                when (requestResponse.code) {
                     200 -> {
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.OK,
-                                "Success",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.OK,
+                            "Success",
+                            requestResponse.body
+                        )
                     }
                     401 -> {
                         clearData()
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Auth token is probably dead. Try to register your device again.",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Auth token is probably dead. Try to register your device again.",
+                            requestResponse.body
+                        )
                     }
                     else -> {
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Error",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Error",
+                            requestResponse.body
+                        )
                     }
                 }
             } else {
-                return PushKFunAnswerGeneral(
-                        704,
-                        PushSDKAnswerResult.FAILED,
-                        "Registration data not found",
-                        "Not registered")
-            }
-        } catch (e: Exception) {
-            PushSDKLogger.error("updateRegistration() failed with exception: ${Log.getStackTraceString(e)}")
-            return PushKFunAnswerGeneral(
-                    710,
+                response = PushServerAnswerGeneral(
+                    704,
                     PushSDKAnswerResult.FAILED,
-                    "Unknown error",
-                    "unknown")
+                    "Registration data not found",
+                    "Not registered"
+                )
+            }
+            PushSDKLogger.debug(context, "updateRegistration response: $response")
+            return response
+        } catch (e: Exception) {
+            PushSDKLogger.error(
+                "updateRegistration failed with exception: ${
+                    Log.getStackTraceString(
+                        e
+                    )
+                }"
+            )
+            return PushServerAnswerGeneral(
+                710,
+                PushSDKAnswerResult.FAILED,
+                "Unknown error",
+                "unknown"
+            )
         }
     }
 
@@ -661,60 +767,77 @@ class PushSDK(
      *
      * @return PushKFunAnswerGeneral
      */
-    fun sendMessageAndReceiveCallback(
+    fun sendMessageCallback(
         messageId: String,
         messageText: String
-    ): PushKFunAnswerGeneral {
-        PushSDKLogger.debug(context, "calling sendMessageAndReceiveCallback() with params:\n" +
-                "messageId $messageId\n" +
-                "messageText $messageText")
+    ): PushServerAnswerGeneral {
+        PushSDKLogger.debug(
+            context, "calling sendMessageCallback with params:\n" +
+                    "messageId $messageId\n" +
+                    "messageText $messageText"
+        )
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
             if (pushSdkSavedDataProvider.registrationStatus) {
-                val requestResponse = apiHandler.hMessageCallback(
+                val requestResponse = apiHandler.messageCallback(
                     messageId,
                     messageText,
-                    pushSdkSavedDataProvider.firebase_registration_token, //_xPushSessionId
-                    pushSdkSavedDataProvider.push_k_registration_token
+                    pushSdkSavedDataProvider.firebaseRegistrationToken, //_xPushSessionId
+                    pushSdkSavedDataProvider.pushServiceRegistrationToken
                 )
-                return when (requestResponse.code) {
+                when (requestResponse.code) {
                     200 -> {
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.OK,
-                                "Success",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.OK,
+                            "Success",
+                            requestResponse.body
+                        )
                     }
                     401 -> {
                         clearData()
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Auth token is probably dead. Try to register your device again.",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Auth token is probably dead. Try to register your device again.",
+                            requestResponse.body
+                        )
                     }
                     else -> {
-                        PushKFunAnswerGeneral(
-                                requestResponse.code,
-                                PushSDKAnswerResult.FAILED,
-                                "Error",
-                                requestResponse.body)
+                        response = PushServerAnswerGeneral(
+                            requestResponse.code,
+                            PushSDKAnswerResult.FAILED,
+                            "Error",
+                            requestResponse.body
+                        )
                     }
                 }
+
             } else {
-                return PushKFunAnswerGeneral(
-                        704,
-                        PushSDKAnswerResult.FAILED,
-                        "Registration data not found",
-                        "Not registered")
-            }
-        } catch (e: Exception) {
-            PushSDKLogger.error("sendMessageAndReceiveCallback() failed with exception: ${Log.getStackTraceString(e)}")
-            return PushKFunAnswerGeneral(
-                    710,
+                response = PushServerAnswerGeneral(
+                    704,
                     PushSDKAnswerResult.FAILED,
-                    "Unknown error",
-                    "unknown")
+                    "Registration data not found",
+                    "Not registered"
+                )
+            }
+            PushSDKLogger.debug(context, "sendMessageCallback response: $response")
+            return response
+        } catch (e: Exception) {
+            PushSDKLogger.error(
+                "sendMessageCallback failed with exception: ${
+                    Log.getStackTraceString(
+                        e
+                    )
+                }"
+            )
+            return PushServerAnswerGeneral(
+                710,
+                PushSDKAnswerResult.FAILED,
+                "Unknown error",
+                "unknown"
+            )
         }
     }
 
@@ -724,70 +847,93 @@ class PushSDK(
      *
      * @return PushKFunAnswerGeneral
      */
-    fun sendMessageDeliveryReport(messageId: String): PushKFunAnswerGeneral {
-        PushSDKLogger.debug(context, "calling sendMessageDeliveryReport() with params:\n" +
-                "messageId $messageId")
+    fun sendMessageDeliveryReport(messageId: String): PushServerAnswerGeneral {
+        PushSDKLogger.debug(
+            context, "calling sendMessageDeliveryReport with params:\n" +
+                    "messageId $messageId"
+        )
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
             if (pushSdkSavedDataProvider.registrationStatus) {
-                if (pushSdkSavedDataProvider.push_k_registration_token != ""
-                        && pushSdkSavedDataProvider.firebase_registration_token != "") {
+                if (pushSdkSavedDataProvider.pushServiceRegistrationToken != ""
+                    && pushSdkSavedDataProvider.firebaseRegistrationToken != ""
+                ) {
                     val requestResponse = apiHandler.hMessageDr(
                         messageId,
-                        pushSdkSavedDataProvider.firebase_registration_token, //_xPushSessionId
-                        pushSdkSavedDataProvider.push_k_registration_token
+                        pushSdkSavedDataProvider.firebaseRegistrationToken, //_xPushSessionId
+                        pushSdkSavedDataProvider.pushServiceRegistrationToken
                     )
-                    return when (requestResponse.code) {
+                    when (requestResponse.code) {
                         200 -> {
-                            PushKFunAnswerGeneral(
-                                    requestResponse.code,
-                                    PushSDKAnswerResult.OK,
-                                    "Success",
-                                    requestResponse.body)
+                            response = PushServerAnswerGeneral(
+                                requestResponse.code,
+                                PushSDKAnswerResult.OK,
+                                "Success",
+                                requestResponse.body
+                            )
                         }
                         401 -> {
                             clearData()
-                            PushKFunAnswerGeneral(
-                                    requestResponse.code,
-                                    PushSDKAnswerResult.FAILED,
-                                    "Auth token is probably dead. Try to register your device again.",
-                                    requestResponse.body)
+                            response = PushServerAnswerGeneral(
+                                requestResponse.code,
+                                PushSDKAnswerResult.FAILED,
+                                "Auth token is probably dead. Try to register your device again.",
+                                requestResponse.body
+                            )
                         }
                         else -> {
-                            PushKFunAnswerGeneral(
-                                    requestResponse.code,
-                                    PushSDKAnswerResult.FAILED,
-                                    "Error",
-                                    requestResponse.body)
+                            response = PushServerAnswerGeneral(
+                                requestResponse.code,
+                                PushSDKAnswerResult.FAILED,
+                                "Error",
+                                requestResponse.body
+                            )
                         }
                     }
+
+
                 } else {
-                    return PushKFunAnswerGeneral(
-                            700,
-                            PushSDKAnswerResult.FAILED,
-                            "Failed. firebase_registration_token or push_registration_token empty",
-                            "{}")
-                }
-            } else {
-                return PushKFunAnswerGeneral(
-                        704,
+                    response = PushServerAnswerGeneral(
+                        700,
                         PushSDKAnswerResult.FAILED,
-                        "Registration data not found",
-                        "Not registered")
-            }
-        } catch (e: Exception) {
-            PushSDKLogger.error("getMessageDeliveryReport() failed with exception: ${Log.getStackTraceString(e)}")
-            return PushKFunAnswerGeneral(
-                    710,
+                        "Failed. firebase_registration_token or push_registration_token empty",
+                        "{}"
+                    )
+                }
+
+            } else {
+                response = PushServerAnswerGeneral(
+                    704,
                     PushSDKAnswerResult.FAILED,
-                    "Unknown error",
-                    "unknown")
+                    "Registration data not found",
+                    "Not registered"
+                )
+            }
+            PushSDKLogger.debug(context, "sendMessageDeliveryReport response: $response")
+            return response
+        } catch (e: Exception) {
+            PushSDKLogger.error(
+                "sendMessageDeliveryReport failed with exception: ${
+                    Log.getStackTraceString(
+                        e
+                    )
+                }"
+            )
+            return PushServerAnswerGeneral(
+                710,
+                PushSDKAnswerResult.FAILED,
+                "Unknown error",
+                "unknown"
+            )
         }
     }
 
     private fun broadcastQueue(queueMessagesRaw: String) {
-        PushSDKLogger.debug(context, "calling broadcastQueue() with params:\n" +
-                "queueMessagesRaw $queueMessagesRaw")
+        PushSDKLogger.debug(
+            context, "calling broadcastQueue with params:\n" +
+                    "queueMessagesRaw $queueMessagesRaw"
+        )
         //Parse string here as json, then foreach -> send delivery
         val queueMessages = Gson().fromJson(queueMessagesRaw, QueueMessages::class.java)
         if (queueMessages.messages.isNotEmpty()) {
@@ -804,8 +950,7 @@ class PushSDK(
 //                        pushSdkSavedDataProvider.push_k_registration_token
 //                )
 //            }
-        }
-        else {
+        } else {
             PushSDKLogger.debug(context, "queueMessagesRaw had no queued messages")
         }
     }
@@ -816,63 +961,80 @@ class PushSDK(
      *
      * @return PushKFunAnswerGeneral
      */
-    fun checkMessageQueue(): PushKFunAnswerGeneral {
-        PushSDKLogger.debug(context, "calling checkMessageQueue()")
+    fun checkMessageQueue(): PushServerAnswerGeneral {
+        PushSDKLogger.debug(context, "calling checkMessageQueue")
+        var response: PushServerAnswerGeneral
         try {
             updateFCMToken()
             if (pushSdkSavedDataProvider.registrationStatus) {
-                if (pushSdkSavedDataProvider.firebase_registration_token != ""
-                        && pushSdkSavedDataProvider.push_k_registration_token != "") {
+                if (pushSdkSavedDataProvider.firebaseRegistrationToken != ""
+                    && pushSdkSavedDataProvider.pushServiceRegistrationToken != ""
+                ) {
                     val requestResponse = apiHandler.getDevicePushMsgQueue(
-                        pushSdkSavedDataProvider.firebase_registration_token,
-                        pushSdkSavedDataProvider.push_k_registration_token
+                        pushSdkSavedDataProvider.firebaseRegistrationToken,
+                        pushSdkSavedDataProvider.pushServiceRegistrationToken
                     )
-                    return when (requestResponse.code) {
+                    when (requestResponse.code) {
                         200 -> {
                             broadcastQueue(requestResponse.body)
-                            PushKFunAnswerGeneral(
-                                    requestResponse.code,
-                                    PushSDKAnswerResult.OK,
-                                    "Success",
-                                    requestResponse.body)
+                            response = PushServerAnswerGeneral(
+                                requestResponse.code,
+                                PushSDKAnswerResult.OK,
+                                "Success",
+                                requestResponse.body
+                            )
                         }
                         401 -> {
                             clearData()
-                            PushKFunAnswerGeneral(
-                                    requestResponse.code,
-                                    PushSDKAnswerResult.FAILED,
-                                    "Auth token is probably dead. Try to register your device again.",
-                                    requestResponse.body)
+                            response = PushServerAnswerGeneral(
+                                requestResponse.code,
+                                PushSDKAnswerResult.FAILED,
+                                "Auth token is probably dead. Try to register your device again.",
+                                requestResponse.body
+                            )
                         }
                         else -> {
-                            PushKFunAnswerGeneral(
-                                    requestResponse.code,
-                                    PushSDKAnswerResult.FAILED,
-                                    "Error",
-                                    requestResponse.body)
+                            response = PushServerAnswerGeneral(
+                                requestResponse.code,
+                                PushSDKAnswerResult.FAILED,
+                                "Error",
+                                requestResponse.body
+                            )
                         }
                     }
                 } else {
-                    return PushKFunAnswerGeneral(
-                            700,
-                            PushSDKAnswerResult.FAILED,
-                            "Failed. firebase_registration_token or push_k_registration_token empty",
-                            "{}")
-                }
-            } else {
-                return PushKFunAnswerGeneral(
-                        704,
+                    response = PushServerAnswerGeneral(
+                        700,
                         PushSDKAnswerResult.FAILED,
-                        "Registration data not found",
-                        "Not registered")
-            }
-        } catch (e: Exception) {
-            PushSDKLogger.error("checkMessageQueue() failed with exception: ${Log.getStackTraceString(e)}")
-            return PushKFunAnswerGeneral(
-                    710,
+                        "Failed. firebase_registration_token or push_k_registration_token empty",
+                        "{}"
+                    )
+                }
+
+            } else {
+                response = PushServerAnswerGeneral(
+                    704,
                     PushSDKAnswerResult.FAILED,
-                    "Unknown error",
-                    "unknown")
+                    "Registration data not found",
+                    "Not registered"
+                )
+            }
+            PushSDKLogger.debug(context, "checkMessageQueue response: $response")
+            return response
+        } catch (e: Exception) {
+            PushSDKLogger.error(
+                "checkMessageQueue failed with exception: ${
+                    Log.getStackTraceString(
+                        e
+                    )
+                }"
+            )
+            return PushServerAnswerGeneral(
+                710,
+                PushSDKAnswerResult.FAILED,
+                "Unknown error",
+                "unknown"
+            )
         }
     }
 
@@ -882,27 +1044,31 @@ class PushSDK(
      *
      * @return PushKFunAnswerGeneral
      */
-    fun rewriteMsisdn(newMsisdn: String): PushKFunAnswerGeneral {
-        PushSDKLogger.debug(context, "calling rewriteMsisdn() with params:\n" +
-                "newMsisdn $newMsisdn")
+    fun rewriteMsisdn(newMsisdn: String): PushServerAnswerGeneral {
+        PushSDKLogger.debug(
+            context, "calling rewriteMsisdn() with params:\n" +
+                    "newMsisdn $newMsisdn"
+        )
         return try {
             if (pushSdkSavedDataProvider.registrationStatus) {
-                pushSdkSavedDataProvider.push_k_user_msisdn = newMsisdn
-                PushKFunAnswerGeneral(200, PushSDKAnswerResult.OK, "Success", "{}")
+                pushSdkSavedDataProvider.userMsisdn = newMsisdn
+                PushServerAnswerGeneral(200, PushSDKAnswerResult.OK, "Success", "{}")
             } else {
-                PushKFunAnswerGeneral(
-                        704,
-                        PushSDKAnswerResult.FAILED,
-                        "Registration data not found",
-                        "Not registered")
+                PushServerAnswerGeneral(
+                    704,
+                    PushSDKAnswerResult.FAILED,
+                    "Registration data not found",
+                    "Not registered"
+                )
             }
         } catch (e: Exception) {
             PushSDKLogger.error("rewriteMsisdn() failed with exception: ${Log.getStackTraceString(e)}")
-            PushKFunAnswerGeneral(
-                    710,
-                    PushSDKAnswerResult.FAILED,
-                    "Unknown error",
-                    "unknown")
+            PushServerAnswerGeneral(
+                710,
+                PushSDKAnswerResult.FAILED,
+                "Unknown error",
+                "unknown"
+            )
         }
     }
 
@@ -913,17 +1079,18 @@ class PushSDK(
      *
      * @return PushKFunAnswerGeneral
      */
-    fun rewritePassword(newPassword: String): PushKFunAnswerGeneral {
+    fun rewritePassword(newPassword: String): PushServerAnswerGeneral {
         PushSDKLogger.debug(context, "rewrite_password start: $newPassword")
         return if (pushSdkSavedDataProvider.registrationStatus) {
-            pushSdkSavedDataProvider.push_k_user_Password = newPassword
-            PushKFunAnswerGeneral(200, PushSDKAnswerResult.OK, "Success", "{}")
+            pushSdkSavedDataProvider.userPassword = newPassword
+            PushServerAnswerGeneral(200, PushSDKAnswerResult.OK, "Success", "{}")
         } else {
-            PushKFunAnswerGeneral(
-                    704,
-                    PushSDKAnswerResult.FAILED,
-                    "Registration data not found",
-                    "Not registered")
+            PushServerAnswerGeneral(
+                704,
+                PushSDKAnswerResult.FAILED,
+                "Registration data not found",
+                "Not registered"
+            )
         }
     }
 }
