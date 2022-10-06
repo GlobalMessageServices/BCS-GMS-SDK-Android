@@ -3,16 +3,16 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlinx-serialization'
 apply from: "publisher.gradle"
-apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'org.jetbrains.dokka'
 
 apply plugin: 'maven-publish'
+apply plugin: 'jacoco'
 
 ext.build_version_name = '1.1.0'
 
 android {
     compileSdkVersion 31
-    buildToolsVersion "29.0.2"
+    buildToolsVersion "30.0.3"
 
     defaultConfig {
         //applicationId "com.push.android.pushsdkandroid"
@@ -26,7 +26,20 @@ android {
         consumerProguardFiles 'consumer-rules.pro'
     }
 
+    testOptions {
+        unitTests.all {
+            jacoco {
+                includeNoLocationClasses = true
+                excludes = ['jdk.internal.*']
+            }
+        }
+        unitTests.returnDefaultValues = true
+    }
+
     buildTypes {
+        debug {
+            testCoverageEnabled true
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -42,6 +55,31 @@ android {
         jvmTarget=11
     }
 }
+
+task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest', 'createDebugCoverageReport']) {
+
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+
+    def fileFilter = ['**/R.class', '**/R$*.class', '**/BuildConfig.*', '**/Manifest*.*', '**/*Test*.*', 'android/**/*.*']
+    def debugTree = fileTree(dir: "${buildDir}/intermediates/classes/debug", excludes: fileFilter)
+    def mainSrc = "${project.projectDir}/src/main/java"
+
+
+    sourceDirectories.setFrom(files([mainSrc]))
+    classDirectories.setFrom(files([debugTree]))
+    executionData.setFrom(fileTree(dir: "$buildDir", includes: [
+            "jacoco/testDebugUnitTest.exec",
+            "outputs/code-coverage/connected/*coverage.ec"
+    ]))
+}
+
+
+
+
+
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -66,13 +104,14 @@ dependencies {
     //noinspection GradleDependency
     implementation 'com.google.firebase:firebase-core:17.5.0'
     //noinspection GradleDependency
-    implementation 'com.google.firebase:firebase-iid:20.2.4'
+    //implementation 'com.google.firebase:firebase-iid:20.2.4'
     //noinspection GradleDependency
     implementation 'com.google.firebase:firebase-messaging:23.0.8'
 
     implementation 'io.github.microutils:kotlin-logging:1.8.3'
-
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1'
+
+    implementation "org.jacoco:org.jacoco.agent:0.7.9:runtime"
 
     implementation 'com.google.code.gson:gson:2.8.6'
 }

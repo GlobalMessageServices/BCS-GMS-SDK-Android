@@ -48,3 +48,4 @@ obj/
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 /build
+/pushsdkandroid/jacoco.exec
