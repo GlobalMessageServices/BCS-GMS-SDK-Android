@@ -32,7 +32,8 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Android Emulator
         uses: vgaidarji/android-github-actions-emulator@v1.0.1
-        run: ./gradlew connectedCheck
+      - name: Android tests
+        run:  ./gradlew connectedCheck
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
