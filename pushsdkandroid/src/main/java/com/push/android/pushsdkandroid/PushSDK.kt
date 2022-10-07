@@ -40,7 +40,7 @@ class PushSDK(
          * @return SDK version name
          */
         fun getSDKVersionName(): String {
-            return BuildConfig.VERSION_NAME
+            return "1.1.0"
         }
 
         /**
@@ -88,6 +88,7 @@ class PushSDK(
     private val pushSdkSavedDataProvider = PushSdkSavedDataProvider(context.applicationContext)
     private var apiHandler: APIHandler = APIHandler(context)
     private var pushDeviceType: String = ""
+
 
     //main class initialization
     init {

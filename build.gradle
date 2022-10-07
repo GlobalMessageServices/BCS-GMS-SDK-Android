@@ -1,12 +1,18 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+
+
 buildscript {
     ext.kotlin_version = '1.6.0'
-    ext.gradleVersion = '3.6.4'
-    ext.dokka_version = "1.4.10.2"
+    ext.gradleVersion = '7.2.0'
+    ext.dokka_version = "1.7.10"
+    ext.jacocoVersion = '0.8.8'
     repositories {
         google()
         jcenter()
+        maven {
+            url 'https://jitpack.io'
+        }
     }
 
     dependencies {
@@ -19,8 +25,24 @@ buildscript {
         classpath 'com.google.gms:google-services:3.1.1'
         classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
 
+        //test coverage
+        classpath "org.jacoco:org.jacoco.core:$jacocoVersion"
+
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
+    }
+}
+
+plugins{
+    id "org.sonarqube" version "3.4.0.2513"
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "GlobalMessageServices_BCS-GMS-SDK-Android"
+        property "sonar.organization", "globalmessageservices"
+        property "sonar.host.url", "https://sonarcloud.io"
+        property("sonar.coverage.jacoco.xmlReportPaths", "${project.projectDir}/pushsdkandroid/build/reports/coverage/androidTest/debug/report.xml")
     }
 }
 
