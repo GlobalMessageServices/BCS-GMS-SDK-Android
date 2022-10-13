@@ -19,7 +19,6 @@ import com.push.android.pushsdkandroid.models.PushDataMessageModel
 import com.push.android.pushsdkandroid.utils.PushSDKLogger
 import java.net.URL
 import java.util.*
-import kotlin.Comparator
 import kotlin.random.Random
 
 /**
@@ -33,9 +32,11 @@ import kotlin.random.Random
  * notifications will not be bundled(grouped) if null; Ignored if api level is below android 7
  * @param notificationIconResourceId Notification small icon
  */
-class PushSdkNotificationManager(private val context: Context,
-                                 private val summaryNotificationTitleAndText: Pair<String, String>?,
-                                 private val notificationIconResourceId: Int = android.R.drawable.ic_notification_overlay) {
+class PushSdkNotificationManager(
+    private val context: Context,
+    private val summaryNotificationTitleAndText: Pair<String, String>?,
+    private val notificationIconResourceId: Int = android.R.drawable.ic_notification_overlay
+) {
     /**
      * Notification constants
      */
@@ -128,62 +129,91 @@ class PushSdkNotificationManager(private val context: Context,
      * @param notificationStyle - which built-in style to use (BIG_TEXT as default)
      * @return NotificationCompat Builder object or null if message could not be read
      */
-    fun constructNotification(data: Map<String, String>, notificationStyle: NotificationStyle): NotificationCompat.Builder? {
-        //parse the data object
-        val message = Gson().fromJson(data["message"], PushDataMessageModel::class.java)
-        if (message == null) {
-            //message is empty, thus it must be an error
-            PushSDKLogger.error("constructNotificationBase() - message is empty")
-            //TODO do something if needed
-            //then stop executing
+    fun constructNotification(
+        data: Map<String, String>,
+        notificationStyle: NotificationStyle
+    ): NotificationCompat.Builder? {
+
+        try {
+            //parse the data object
+            val message = Gson().fromJson(data["message"], PushDataMessageModel::class.java)
+            if (message == null) {
+                //message is empty, thus it must be an error
+                PushSDKLogger.error("constructNotification - message is empty")
+                //TODO do something if needed
+                //then stop executing
+                return null
+            }
+
+            var builder =
+                NotificationCompat.Builder(
+                    context.applicationContext,
+                    DEFAULT_NOTIFICATION_CHANNEL_ID
+                ).apply {
+                    setGroup(DEFAULT_NOTIFICATION_GROUP_ID)
+                    priority = NotificationCompat.PRIORITY_MAX
+
+                    setAutoCancel(true)
+                    setContentTitle(message.title)
+                    setContentText(message.body)
+                    setSmallIcon(android.R.drawable.ic_notification_overlay)
+                    setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+
+                    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {
+                        context.packageManager.getLaunchIntentForPackage(context.applicationInfo.packageName)
+                            ?.let {
+                                //build an intent for notification (click to open the app)
+                                val pendingIntent = PendingIntent.getActivity(
+                                    context,
+                                    0,
+
+                                    it.apply {
+                                        action = PushSDK.NOTIFICATION_CLICK_INTENT_ACTION
+                                        putExtra(
+                                            PushSDK.NOTIFICATION_CLICK_PUSH_DATA_EXTRA_NAME,
+                                            data["message"]
+
+                                        )
+                                    },
+                                    PendingIntent.FLAG_IMMUTABLE,
+                                )
+                                setContentIntent(pendingIntent)
+                            }
+
+                        when (notificationStyle) {
+                            NotificationStyle.NO_STYLE -> {
+                                //image size is recommended to be <1mb for notifications
+                                getBitmapFromURL(message.image.url)?.let {
+                                    setLargeIcon(it)
+                                }
+                            }
+                            NotificationStyle.BIG_TEXT -> {
+                                setStyle(NotificationCompat.BigTextStyle())
+                                //image size is recommended to be <1mb for notifications
+                                getBitmapFromURL(message.image.url)?.let {
+                                    setLargeIcon(it)
+                                }
+                            }
+                            NotificationStyle.BIG_PICTURE -> {
+                                //image size is recommended to be <1mb for notifications
+                                getBitmapFromURL(message.image.url)?.let {
+                                    setStyle(
+                                        NotificationCompat.BigPictureStyle().bigPicture(it)
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        setGroupSummary(true)
+                    }
+                }
+
+            return builder
+        } catch (e: Exception) {
+            e.printStackTrace()
+            PushSDKLogger.debug(context, "data: $data")
             return null
         }
-
-        return NotificationCompat.Builder(context.applicationContext, DEFAULT_NOTIFICATION_CHANNEL_ID)
-            .apply {
-                setGroup(DEFAULT_NOTIFICATION_GROUP_ID)
-                priority = NotificationCompat.PRIORITY_MAX
-                setAutoCancel(true)
-                setContentTitle(message.title)
-                setContentText(message.body)
-                setSmallIcon(notificationIconResourceId)
-                setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
-                //actually should never be null, but just in case
-                context.packageManager.getLaunchIntentForPackage(context.applicationInfo.packageName)?.let {
-                    //build an intent for notification (click to open the app)
-                    val pendingIntent = PendingIntent.getActivity(
-                        context,
-                        0,
-                        it.apply {
-                            action = PushSDK.NOTIFICATION_CLICK_INTENT_ACTION
-                            putExtra(PushSDK.NOTIFICATION_CLICK_PUSH_DATA_EXTRA_NAME, data["message"])
-                        },
-                        PendingIntent.FLAG_UPDATE_CURRENT
-                    )
-                    setContentIntent(pendingIntent)
-                }
-                when (notificationStyle) {
-                    NotificationStyle.NO_STYLE -> {
-                        //image size is recommended to be <1mb for notifications
-                        getBitmapFromURL(message.image.url)?.let {
-                            setLargeIcon(it)
-                        }
-                    }
-                    NotificationStyle.BIG_TEXT -> {
-                        setStyle(NotificationCompat.BigTextStyle())
-                        //image size is recommended to be <1mb for notifications
-                        getBitmapFromURL(message.image.url)?.let {
-                            setLargeIcon(it)
-                        }
-                    }
-                    NotificationStyle.BIG_PICTURE -> {
-                        //image size is recommended to be <1mb for notifications
-                        getBitmapFromURL(message.image.url)?.let {
-                            setStyle(NotificationCompat.BigPictureStyle().bigPicture(it))
-                        }
-                    }
-                }
-            }
     }
 
     /**
@@ -192,56 +222,48 @@ class PushSdkNotificationManager(private val context: Context,
      * @param notificationConstruct NotificationCompat.Builder object to send
      */
     fun sendNotification(
-            notificationConstruct: NotificationCompat.Builder
+        notificationConstruct: NotificationCompat.Builder
     ): Boolean {
-        //Create notification channel if it doesn't exist (mandatory for Android O and above)
-        NotificationManagerCompat.from(context.applicationContext).apply {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                createNotificationChannel(
-                    NotificationChannel(
-                        DEFAULT_NOTIFICATION_CHANNEL_ID,
-                        NOTIFICATION_CHANNEL_NAME,
-                        NotificationManager.IMPORTANCE_HIGH
-                    )
-                )
-            }
-
-            //construct the notification object
+        try {
+            //Create notification channel if it doesn't exist (mandatory for Android O and above)
+            val notificationId = Random.nextInt(
+                DEFAULT_SUMMARY_NOTIFICATION_ID + 1,
+                Int.MAX_VALUE - 10
+            )
             val notification = notificationConstruct.build()
 
-            //show regular notification
-            val notificationId = Random.nextInt(DEFAULT_SUMMARY_NOTIFICATION_ID+1,Int.MAX_VALUE - 10)
-            notify(NOTIFICATION_TAG, notificationId, notification)
-
-            //Not much point in making bundled notifications on API < 24
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                //construct the summary notification object
-                summaryNotificationTitleAndText?.let {
-                    val summaryNotification =
-                        NotificationCompat.Builder(
-                            context.applicationContext,
-                            DEFAULT_NOTIFICATION_CHANNEL_ID
+            NotificationManagerCompat.from(context.applicationContext).apply {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    createNotificationChannel(
+                        NotificationChannel(
+                            DEFAULT_NOTIFICATION_CHANNEL_ID,
+                            NOTIFICATION_CHANNEL_NAME,
+                            NotificationManager.IMPORTANCE_HIGH
                         )
-                            .apply {
-                                setGroup(DEFAULT_NOTIFICATION_GROUP_ID)
-                                setGroupSummary(true)
-                                priority = NotificationCompat.PRIORITY_MAX
-                                setAutoCancel(true)
-                                setContentTitle(summaryNotificationTitleAndText.first)
-                                setContentText(summaryNotificationTitleAndText.second)
-                                setSmallIcon(notificationIconResourceId)
-                            }.build()
-
+                    )
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                    //show regular notification
+                    notify(
+                        NOTIFICATION_TAG,
+                        notificationId,
+                        notification
+                    )
+                } else {
                     //show summary notification
                     notify(
                         SUMMARY_NOTIFICATION_TAG,
                         DEFAULT_SUMMARY_NOTIFICATION_ID,
-                        summaryNotification
+                        notification
                     )
+
                 }
             }
+            return true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
         }
-        return true
     }
 
     /**
@@ -250,7 +272,7 @@ class PushSdkNotificationManager(private val context: Context,
      *
      * @param cancelOldest - cancel oldest notification to free up space
      */
-    fun hasSpaceForNotification(cancelOldest: Boolean) : Boolean {
+    fun hasSpaceForNotification(cancelOldest: Boolean): Boolean {
         var hasSpaceForNotification = false
 
         //check notification limit, and cancel first active notification if possible
@@ -280,14 +302,12 @@ class PushSdkNotificationManager(private val context: Context,
                     }
                 }
             }
-        }
-        else
+        } else
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
                 //TODO not yet supported, might use NotificationListenerService
                 //assume there is space
                 hasSpaceForNotification = true
-            }
-            else {
+            } else {
                 //assume there is space, nothing can be done in this case
                 hasSpaceForNotification = true
             }
@@ -310,7 +330,10 @@ class PushSdkNotificationManager(private val context: Context,
             val notificationManager =
                 context.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                PushSDKLogger.debug(context.applicationContext, "currentInterruptionFilter: ${notificationManager.currentInterruptionFilter}")
+                PushSDKLogger.debug(
+                    context.applicationContext,
+                    "currentInterruptionFilter: ${notificationManager.currentInterruptionFilter}"
+                )
                 notificationManager.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL
             } else {
                 false
@@ -327,20 +350,24 @@ class PushSdkNotificationManager(private val context: Context,
     @Suppress("LiftReturnOrAssignment")
     fun isNotificationChannelMuted(channelId: String): Boolean {
         val notificationManager =
-                context.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            context.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = notificationManager.getNotificationChannel(channelId)
             if (channel != null) {
                 val importance = channel.importance
-                PushSDKLogger.debug(context.applicationContext, "getNotificationChannel(channelId).importance: $importance")
+                PushSDKLogger.debug(
+                    context.applicationContext,
+                    "getNotificationChannel(channelId).importance: $importance"
+                )
                 return importance == NotificationManager.IMPORTANCE_NONE
-            }
-            else {
-                PushSDKLogger.debug(context.applicationContext, "$channelId - CHANNEL ID DOES NOT EXIST")
+            } else {
+                PushSDKLogger.debug(
+                    context.applicationContext,
+                    "$channelId - CHANNEL ID DOES NOT EXIST"
+                )
                 return false
             }
-        }
-        else {
+        } else {
             return false
         }
     }

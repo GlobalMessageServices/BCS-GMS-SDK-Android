@@ -74,6 +74,13 @@ internal class PushSdkSavedDataProvider(private val context: Context) {
             PushSDKLogger.debug(context, "[${javaClass.simpleName}] saving logLevel: $value")
         }
 
+    var enableAutoDeliveryReport: Boolean
+        get() = sharedPreferencesHandler.getValueBool("enableAutoDeliveryReport", true)
+        set(value) {
+            sharedPreferencesHandler.save("enableAutoDeliveryReport", value)
+            PushSDKLogger.debug(context, "[${javaClass.simpleName}] saving enableAutoDeliveryReport: $value")
+        }
+
     ////////////////////////////////////////
     //----API params
     /**
