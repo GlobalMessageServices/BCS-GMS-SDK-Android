@@ -42,9 +42,9 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging:21.0.0'
 }
 ```
-* Make sure you add proper google-services.json file to the root of your app module
-Read more at: https://firebase.google.com/docs/android/learn-more
-!!!Starting with Gradle 7 repositoriesMode in settings.gradle (Project Settings) should be changed as showed below: 
+* Make sure you add proper google-services.json file to the root of your app module<br>
+Read more at: https://firebase.google.com/docs/android/learn-more<br>
+### !!!Starting with Gradle 7 repositoriesMode in settings.gradle (Project Settings) should be changed as showed below: 
 ```Gradle
 	dependencyResolutionManagement {
 		repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
@@ -244,8 +244,17 @@ Make sure you have extended the PushKFirebaseService and added it to the Android
 *	baseApiUrl - base URL path to the API
 ```Kotlin
 val pushSDK = PushSDK(
-    context = this,
-    baseApiUrl = "https://yourapilink.com/version/3.0" // API url that you would be provided with
+    context = this, // required
+    baseApiUrl = "https://yourapilink.com/version/3.0" // API url that you would be provided with. required
+)
+```
+You can also init SDK with additional optional parameters:
+```Kotlin
+val pushSDK = PushSDK(
+    context = this, //required
+    baseApiUrl = "https://yourapilink.com/version/3.0", // required
+	PushSDK.LogLevels.PUSHSDK_LOG_LEVEL_DEBUG, // optional. enable debugging (by default is LogLevels.PUSHSDK_LOG_LEVEL_ERROR)
+	enableAutoDeliveryReport = false // optional. enable/disable auto sending DR if notification was displayed (by default = true)
 )
 ```
 ### Register your device/application:
@@ -289,7 +298,7 @@ Note: In case you are trying out this code for the first time, you may want to u
 val answer0 = pushSDK.unregisterAllDevices()
 Log.d("TAG", answer0.toString())
 ```
-###Your application should now be able to receive push messages from the api
+### Your application should now be able to receive push messages from the api
 Note: By default, notifications would only appear when your application is in background.
 ### For more usage information - please see:
 •	[Receiving push messages and showing notifications](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/wiki/Receiving-push-messages-and-showing-notifications)
