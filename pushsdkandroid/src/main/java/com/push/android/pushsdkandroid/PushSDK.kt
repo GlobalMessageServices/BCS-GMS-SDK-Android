@@ -41,7 +41,7 @@ class PushSDK(
          * @return SDK version name
          */
         fun getSDKVersionName(): String {
-            return "1.1.1"
+            return BuildConfig.VERSION_NAME
         }
 
         /**

@@ -21,6 +21,7 @@ android {
         versionCode 1
 
         versionName "${build_version_name}"
+        buildConfigField 'String', 'VERSION_NAME', "\"${build_version_name}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles 'consumer-rules.pro'
