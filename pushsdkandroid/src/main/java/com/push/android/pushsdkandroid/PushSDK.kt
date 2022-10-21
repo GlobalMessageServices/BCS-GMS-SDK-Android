@@ -26,7 +26,8 @@ import kotlin.properties.Delegates
 class PushSDK(
     context: Context,
     baseApiUrl: String,
-    log_level: LogLevels = LogLevels.PUSHSDK_LOG_LEVEL_ERROR
+    log_level: LogLevels = LogLevels.PUSHSDK_LOG_LEVEL_ERROR,
+    enableAutoDeliveryReport : Boolean = true
 ) {
 
     /**
@@ -40,7 +41,7 @@ class PushSDK(
          * @return SDK version name
          */
         fun getSDKVersionName(): String {
-            return "1.1.0"
+            return BuildConfig.VERSION_NAME
         }
 
         /**
@@ -95,6 +96,7 @@ class PushSDK(
         this.context = context
         pushSdkSavedDataProvider.baseApiUrl = baseApiUrl
         pushSdkSavedDataProvider.logLevel = log_level.name
+        pushSdkSavedDataProvider.enableAutoDeliveryReport = enableAutoDeliveryReport
         pushDeviceType = Info.getPhoneType(context)
         try {
             updateFCMToken()

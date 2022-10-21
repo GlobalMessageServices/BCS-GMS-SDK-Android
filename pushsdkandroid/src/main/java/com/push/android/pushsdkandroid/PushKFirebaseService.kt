@@ -138,13 +138,15 @@ open class PushKFirebaseService(
             //data push received, make a callback
             val isDoNotDisturbModeActive = pushSdkNotificationManager.isDoNotDisturbModeActive()
             val areNotificationsEnabled = pushSdkNotificationManager.areNotificationsEnabled()
-            val isNotificationChannelMuted = pushSdkNotificationManager.isNotificationChannelMuted(PushSdkNotificationManager.DEFAULT_NOTIFICATION_CHANNEL_ID)
+            val isNotificationChannelMuted =
+                pushSdkNotificationManager.isNotificationChannelMuted(PushSdkNotificationManager.DEFAULT_NOTIFICATION_CHANNEL_ID)
             onReceiveDataPush(
                 isAppInForeground(),
                 isDoNotDisturbModeActive,
                 areNotificationsEnabled,
                 isNotificationChannelMuted,
-                remoteMessage)
+                remoteMessage
+            )
         }
     }
 
@@ -177,18 +179,22 @@ open class PushKFirebaseService(
      * @param isNotificationChannelMuted whether the notification channel is muted on the user device
      * @param remoteMessage received remote message object
      */
-    open fun onReceiveDataPush(appIsInForeground: Boolean,
-                               isDoNotDisturbModeActive: Boolean,
-                               areNotificationsEnabled: Boolean,
-                               isNotificationChannelMuted: Boolean,
-                               remoteMessage: RemoteMessage) {
-        PushSDKLogger.debug(applicationContext,
+    open fun onReceiveDataPush(
+        appIsInForeground: Boolean,
+        isDoNotDisturbModeActive: Boolean,
+        areNotificationsEnabled: Boolean,
+        isNotificationChannelMuted: Boolean,
+        remoteMessage: RemoteMessage
+    ) {
+        PushSDKLogger.debug(
+            applicationContext,
             "onReceiveDataPush(): \n" +
                     "appIsInForeground: $appIsInForeground \n" +
                     "isDoNotDisturbModeActive: $isDoNotDisturbModeActive \n" +
                     "areNotificationsEnabled: $areNotificationsEnabled \n" +
                     "isNotificationChannelMuted: $isNotificationChannelMuted \n" +
-                    "remoteMessage.data: ${remoteMessage.data}")
+                    "remoteMessage.data: ${remoteMessage.data}"
+        )
         //send notification
         if (remoteMessage.notification == null
             && !appIsInForeground
@@ -199,16 +205,34 @@ open class PushKFirebaseService(
         ) {
             val notificationConstruct = prepareNotification(remoteMessage.data)
             if (notificationConstruct != null) {
-                pushSdkNotificationManager.sendNotification(notificationConstruct)
-                onNotificationSent(
+                var isNotificationSent =
+                    pushSdkNotificationManager.sendNotification(notificationConstruct)
+                if (isNotificationSent) {
+                    onNotificationSent(
                         appIsInForeground,
                         isDoNotDisturbModeActive,
                         areNotificationsEnabled,
                         isNotificationChannelMuted,
-                        remoteMessage)
+                        remoteMessage
+                    )
+                } else {
+                    PushSDKLogger.error(
+                        "Unable to create send notification: \n" +
+                                "notificationConstruct: $notificationConstruct"
+                    )
+                    onNotificationWontBeSent(
+                        appIsInForeground,
+                        isDoNotDisturbModeActive,
+                        areNotificationsEnabled,
+                        isNotificationChannelMuted,
+                        remoteMessage
+                    )
+                }
             } else {
-                PushSDKLogger.error("Unable to create notificationConstruct: \n" +
-                        "remoteMessage.data: ${remoteMessage.data}")
+                PushSDKLogger.error(
+                    "Unable to create notificationConstruct: \n" +
+                            "remoteMessage.data: ${remoteMessage.data}"
+                )
                 onNotificationWontBeSent(
                     appIsInForeground,
                     isDoNotDisturbModeActive,
@@ -218,21 +242,21 @@ open class PushKFirebaseService(
                 )
             }
         } else {
-            //notify the user there is no space for notifications,
-            // and the push must be handled manually
-            PushSDKLogger.debug(applicationContext,
+            PushSDKLogger.debug(
+                applicationContext,
                 "Can't send notification: \n" +
                         "appIsInForeground: $appIsInForeground \n" +
                         "isDoNotDisturbModeActive: $isDoNotDisturbModeActive \n" +
                         "areNotificationsEnabled: $areNotificationsEnabled \n" +
                         "isNotificationChannelMuted: $isNotificationChannelMuted \n" +
-                        "remoteMessage.data: ${remoteMessage.data}")
+                        "remoteMessage.data: ${remoteMessage.data}"
+            )
             onNotificationWontBeSent(
-                    appIsInForeground,
-                    isDoNotDisturbModeActive,
-                    areNotificationsEnabled,
-                    isNotificationChannelMuted,
-                    remoteMessage
+                appIsInForeground,
+                isDoNotDisturbModeActive,
+                areNotificationsEnabled,
+                isNotificationChannelMuted,
+                remoteMessage
             )
         }
     }
@@ -270,7 +294,9 @@ open class PushKFirebaseService(
         remoteMessage: RemoteMessage
     ) {
         PushSDKLogger.debug(applicationContext, "calling onNotificationSent()")
-        sendMessageDeliveryReport(remoteMessage)
+        if (pushSdkSavedDataProvider.enableAutoDeliveryReport) {
+            sendMessageDeliveryReport(remoteMessage)
+        }
     }
 
     /**
@@ -384,14 +410,14 @@ open class PushKFirebaseService(
                     )
                     PushSDKLogger.debug(
                         applicationContext,
-                        "delivery report success: messid ${remoteMessage.messageId.toString()}," +
+                        "delivery report success: messageid ${remoteMessage.messageId.toString()}," +
                                 " token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}," +
                                 " push_k_registration_token: ${pushSdkSavedDataProvider.pushServiceRegistrationToken}"
                     )
                 } else {
                     PushSDKLogger.debug(
                         applicationContext,
-                        "delivery report failed: messid ${remoteMessage.messageId.toString()}," +
+                        "delivery report failed: messageid ${remoteMessage.messageId.toString()}," +
                                 " token: ${pushSdkSavedDataProvider.firebaseRegistrationToken}," +
                                 " push_k_registration_token: ${pushSdkSavedDataProvider.pushServiceRegistrationToken}"
                     )
@@ -399,6 +425,7 @@ open class PushKFirebaseService(
             }
         } catch (e: Exception) {
             PushSDKLogger.error("onMessageReceived: failed: ${Log.getStackTraceString(e)}")
+            PushSDKLogger.debug(applicationContext, "remoteMessage: $remoteMessage")
         }
     }
 }

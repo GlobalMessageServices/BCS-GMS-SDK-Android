@@ -10,6 +10,7 @@ import java.net.URL
 import java.nio.charset.Charset
 import java.security.MessageDigest
 import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLSocketFactory
 
 /**
  * Communication with push rest server (REST API)
@@ -124,7 +125,10 @@ internal class APIHandler(private val context: Context) {
             try {
                 val connection = when (url.protocol) {
                     "https" -> {
-                        url.openConnection() as HttpsURLConnection
+                        (url.openConnection() as HttpsURLConnection).also {
+                            it.sslSocketFactory =
+                                SSLSocketFactory.getDefault() as SSLSocketFactory
+                        }
                     }
                     "http" -> {
                         url.openConnection() as HttpURLConnection
@@ -151,7 +155,7 @@ internal class APIHandler(private val context: Context) {
                             inputStream.bufferedReader().use {
                                 requestResponseData = it.readLine().toString()
 
-                                it.close()
+
                             }
                             PushSDKLogger.debug(
                                 context,
@@ -168,16 +172,27 @@ internal class APIHandler(private val context: Context) {
                                 it.close()
                             }
                             requestResponseCode = responseCode
-                            inputStream.bufferedReader().use {
-                                val response = StringBuffer()
-                                var inputLine = it.readLine()
-                                while (inputLine != null) {
-                                    response.append(inputLine)
-                                    inputLine = it.readLine()
-                                }
-                                requestResponseData = response.toString()
 
-                                it.close()
+                            if (responseCode == 200) {
+                                inputStream.bufferedReader().use {
+                                    val response = StringBuffer()
+                                    var inputLine = it.readLine()
+                                    while (inputLine != null) {
+                                        response.append(inputLine)
+                                        inputLine = it.readLine()
+                                    }
+                                    requestResponseData = response.toString()
+                                }
+                            } else {
+                                errorStream.bufferedReader().use {
+                                    val response = StringBuffer()
+                                    var inputLine = it.readLine()
+                                    while (inputLine != null) {
+                                        response.append(inputLine)
+                                        inputLine = it.readLine()
+                                    }
+                                    requestResponseData = response.toString()
+                                }
                             }
                             PushSDKLogger.debug(
                                 context,
