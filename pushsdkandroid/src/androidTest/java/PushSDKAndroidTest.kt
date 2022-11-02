@@ -6,6 +6,7 @@ import com.google.firebase.messaging.RemoteMessage
 import com.google.gson.Gson
 import com.push.android.pushsdkandroid.PushSDK
 import com.push.android.pushsdkandroid.core.APIHandler
+import com.push.android.pushsdkandroid.core.SharedPreferencesHandler
 import com.push.android.pushsdkandroid.managers.PushSdkNotificationManager
 import com.push.android.pushsdkandroid.models.PushDataMessageImageModel
 import com.push.android.pushsdkandroid.models.PushDataMessageModel
@@ -25,6 +26,7 @@ class PushSDKAndroidTest {
     private lateinit var message: String
     private lateinit var remoteMessage: RemoteMessage
     private val map: HashMap<String, String> = HashMap()
+    private lateinit var sharedPreferencesHandler: SharedPreferencesHandler
 
     @Before
     fun before() {
@@ -32,11 +34,32 @@ class PushSDKAndroidTest {
         pushSDK = PushSDK(appContext, "https://example.io/api/3.0/")
         apiHandler = APIHandler(appContext)
         notificationManager = PushSdkNotificationManager(appContext, Pair("source", "message"))
-
+        sharedPreferencesHandler = SharedPreferencesHandler(appContext)
         message = "{\"button\":{},\"image\":{\"url\":\"https://test_image.jpg\"},\"partner\":\"push\",\"phone\":\"0123456789\",\"messageId\":\"6c000000-4b8f-11ed-972a-0000006010000\",\"time\":\"2022-06-22T07:34:53.738326+00\",\"body\":\"Test Message Android\",\"title\":\"Test title Android\"}"
         map["source"] = "Messaging HUB"
         map["message"] = message.toString()
         remoteMessage = RemoteMessage.Builder("internal").setData(map).build()
+    }
+
+
+    @Test
+    @Throws(Exception::class)
+    fun testSharedPreferences() {
+        var testString = "some string"
+        var testInt = 123456
+        var testBool = true
+
+        sharedPreferencesHandler.save("TEST_INT", testInt)
+        sharedPreferencesHandler.save("TEST_BOOL", testBool)
+        sharedPreferencesHandler.saveString("TEST_STRING", testString)
+
+        val testStrDB = sharedPreferencesHandler.getValueString("TEST_STRING")
+        val testIntDB = sharedPreferencesHandler.getValueInt("TEST_INT")
+        val testBoolDB = sharedPreferencesHandler.getValueBool("TEST_BOOL", false)
+
+        TestCase.assertEquals(testString, testStrDB)
+        TestCase.assertEquals(testInt, testIntDB)
+        TestCase.assertEquals(testBool, testBoolDB)
     }
 
     @Test

@@ -4,7 +4,6 @@ Service for Firebase Push notification messaging
 
 package com.push.android.pushsdkandroid
 
-import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
@@ -12,13 +11,16 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.google.gson.Gson
-import com.push.android.pushsdkandroid.utils.Info
 import com.push.android.pushsdkandroid.core.APIHandler
 import com.push.android.pushsdkandroid.core.PushSdkSavedDataProvider
 import com.push.android.pushsdkandroid.managers.PushSdkNotificationManager
-import com.push.android.pushsdkandroid.utils.PushSDKLogger
 import com.push.android.pushsdkandroid.models.PushDataMessageModel
-import kotlinx.coroutines.*
+import com.push.android.pushsdkandroid.utils.Info
+import com.push.android.pushsdkandroid.utils.PushSDKLogger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * A "FirebaseMessagingService based" service for handling push messages;
@@ -132,8 +134,6 @@ open class PushKFirebaseService(
 
         // Check if message contains a data payload.
         if (remoteMessage.data.isNotEmpty() && remoteMessage.data["source"] == "Messaging HUB") {
-            //broadcast the data push
-            sendDataPushBroadcast(remoteMessage)
 
             //data push received, make a callback
             val isDoNotDisturbModeActive = pushSdkNotificationManager.isDoNotDisturbModeActive()
@@ -318,22 +318,6 @@ open class PushKFirebaseService(
     ) {
         PushSDKLogger.debug(applicationContext, "calling onNotificationWontBeSent()")
         //does nothing
-    }
-
-    /**
-     * Sends dataPush broadcast, so it could be caught somewhere else
-     */
-    private fun sendDataPushBroadcast(remoteMessage: RemoteMessage) {
-        try {
-            Intent().apply {
-                action = PushSDK.BROADCAST_PUSH_DATA_INTENT_ACTION
-                putExtra(PushSDK.BROADCAST_PUSH_DATA_EXTRA_NAME, remoteMessage.data["message"])
-                sendBroadcast(this)
-            }
-            PushSDKLogger.debug(applicationContext, "datapush broadcast success")
-        } catch (e: Exception) {
-            PushSDKLogger.error("datapush broadcast error: ${Log.getStackTraceString(e)}")
-        }
     }
 
     /**

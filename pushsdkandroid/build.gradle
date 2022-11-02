@@ -8,7 +8,7 @@ apply plugin: 'org.jetbrains.dokka'
 apply plugin: 'maven-publish'
 apply plugin: 'jacoco'
 
-ext.build_version_name = '1.1.1'
+ext.build_version_name = '1.1.2'
 
 android {
     compileSdkVersion 32
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         //applicationId "com.push.android.pushsdkandroid"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 32
         versionCode 1
 
@@ -90,6 +90,7 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.6.0'
     implementation 'androidx.lifecycle:lifecycle-process:2.5.1'
     implementation 'androidx.test:monitor:1.5.0'
+    implementation 'androidx.security:security-crypto:1.1.0-alpha03'
 
 
     testImplementation 'junit:junit:4.13.2'

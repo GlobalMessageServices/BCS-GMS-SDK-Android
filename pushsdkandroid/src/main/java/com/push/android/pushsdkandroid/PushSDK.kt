@@ -1,18 +1,20 @@
 package com.push.android.pushsdkandroid
 
 import android.content.Context
-import android.content.Intent
 import android.util.Log
 import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.push.android.pushsdkandroid.utils.Info
-import com.push.android.pushsdkandroid.core.*
-import com.push.android.pushsdkandroid.utils.PushSDKLogger
-import com.push.android.pushsdkandroid.models.*
+import com.push.android.pushsdkandroid.core.APIHandler
+import com.push.android.pushsdkandroid.core.PushSdkSavedDataProvider
+import com.push.android.pushsdkandroid.models.PushSDKAnswerResult
+import com.push.android.pushsdkandroid.models.PushServerAnswerGeneral
+import com.push.android.pushsdkandroid.models.PushServerAnswerRegister
 import com.push.android.pushsdkandroid.models.PushServerApiResponse
+import com.push.android.pushsdkandroid.utils.Info
+import com.push.android.pushsdkandroid.utils.PushSDKLogger
 import kotlin.properties.Delegates
 
 /**
@@ -45,16 +47,6 @@ class PushSDK(
         }
 
         /**
-         * Intent action for sending queue messages
-         */
-        const val BROADCAST_QUEUE_INTENT_ACTION = "com.push.android.pushsdkandroid.pushqueue"
-
-        /**
-         * Name of the extra inside the intent that broadcasts message queue
-         */
-        const val BROADCAST_QUEUE_EXTRA_NAME = "queue"
-
-        /**
          * Intent action when user clicks a notification
          */
         const val NOTIFICATION_CLICK_INTENT_ACTION = "pushsdk.intent.action.notification"
@@ -63,16 +55,6 @@ class PushSDK(
          * Name of the extra inside the intent that broadcasts push data
          */
         const val NOTIFICATION_CLICK_PUSH_DATA_EXTRA_NAME = "data"
-
-        /**
-         * Action for intent that is broadcasted when a push is received
-         */
-        const val BROADCAST_PUSH_DATA_INTENT_ACTION = "com.push.android.pushsdkandroid.Push"
-
-        /**
-         * Name of the extra inside the intent that broadcasts push data
-         */
-        const val BROADCAST_PUSH_DATA_EXTRA_NAME = "data"
 
     }
 
@@ -932,35 +914,9 @@ class PushSDK(
         }
     }
 
-    private fun broadcastQueue(queueMessagesRaw: String) {
-        PushSDKLogger.debug(
-            context, "calling broadcastQueue with params:\n" +
-                    "queueMessagesRaw $queueMessagesRaw"
-        )
-        //Parse string here as json, then foreach -> send delivery
-        val queueMessages = Gson().fromJson(queueMessagesRaw, QueueMessages::class.java)
-        if (queueMessages.messages.isNotEmpty()) {
-            Intent().apply {
-                action = BROADCAST_QUEUE_INTENT_ACTION
-                putExtra(BROADCAST_QUEUE_EXTRA_NAME, queueMessagesRaw)
-                context.sendBroadcast(this)
-            }
-            //send delivery reports here (NOT)
-//            queueMessages.messages.forEach { message ->
-//                apiHandler.hMessageDr(
-//                        message.messageId,
-//                        pushSdkSavedDataProvider.firebase_registration_token,
-//                        pushSdkSavedDataProvider.push_k_registration_token
-//                )
-//            }
-        } else {
-            PushSDKLogger.debug(context, "queueMessagesRaw had no queued messages")
-        }
-    }
 
     /**
-     * Checks undelivered message queue and sends delivery report for the messages;
-     * Will also broadcast an intent with all the queued message
+     * Checks undelivered message queue;
      *
      * @return PushKFunAnswerGeneral
      */
@@ -979,7 +935,6 @@ class PushSDK(
                     )
                     when (requestResponse.code) {
                         200 -> {
-                            broadcastQueue(requestResponse.body)
                             response = PushServerAnswerGeneral(
                                 requestResponse.code,
                                 PushSDKAnswerResult.OK,

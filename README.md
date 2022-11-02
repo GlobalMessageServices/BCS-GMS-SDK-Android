@@ -7,9 +7,11 @@
 1. [Add the SDK to your project](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#add-the-sdk-to-your-project)
 1. [Extend the PushKFirebaseService](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#extend-the-pushkfirebaseservice)
 1. [Start using the SDK](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#start-using-the-sdk)
+1. [Receiving push messages](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#receiving-push-messages)
 1. [SDK functions description](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#sdk-functions-description)
 
 ***
+
 ## Add Firebase cloud messaging to your project
 
 ### You need to connect your app to your firebase project
@@ -53,6 +55,9 @@ Read more at: https://firebase.google.com/docs/android/learn-more<br>
 		}
 	}
 ```
+
+***
+
 ## Get credentials for your app using Android Studio
 ### Provide your firebase project's cloud messaging server key and application fingerpint to the PushSDK representative, and obtain required credentials to work with the SDK
 ![image](https://user-images.githubusercontent.com/112561176/193266741-102adcdc-9492-44e6-abc7-82116f4e775f.png)
@@ -92,6 +97,8 @@ keytool -list -v -keystore C:\Users\user_name\debug-keystore.jks
 where C:\Users\user_name\debug-keystore.jks is key store path.<br>
 Read more at: https://developer.android.com/studio/publish/app-signing#generate-key and https://developers.google.com/android/guides/client-auth
 
+***
+
 ## Add the SDK to your project
 Make sure you have declared maven repository in your project (top-level) build.gradle
 ```Gradle
@@ -104,12 +111,12 @@ allprojects {
     }
 }
 ```
-Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.0
+Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.2
 ```Gradle
 dependencies {
     ...
     //or use a newer version if available
-    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.0'
+    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.2'
 }
 ```
 To use http protocol instead of https, add android:usesCleartextTraffic="true" to your application tag inside android manifest
@@ -120,6 +127,8 @@ To use http protocol instead of https, add android:usesCleartextTraffic="true" t
         android:usesCleartextTraffic="true"
         >
 ```
+
+***
 
 ## Extend the PushKFirebaseService
 Create a class that extends PushKFirebaseService<br>
@@ -237,6 +246,9 @@ Add the service to your AndroidManifest.xml
 </service>
 </application>
 ```
+
+***
+
 ## Start using the SDK
 Make sure you have extended the PushKFirebaseService and added it to the AndroidManifest.xml
 ### Init the SDK with the following basic parameters:
@@ -300,15 +312,259 @@ Log.d("TAG", answer0.toString())
 ```
 ### Your application should now be able to receive push messages from the api
 Note: By default, notifications would only appear when your application is in background.
-### For more usage information - please see:
-•	[Receiving push messages and showing notifications](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/wiki/Receiving-push-messages-and-showing-notifications)
+
+***
+
+## Receiving push messages
+
+### Receiving push messages with PushKFirebaseService and Intent Broadcast
+
+You can send Broadcast via Intent once a push message is received, and receive it wherever you want:
 
 
+```kotlin
+Intent().apply {
+    action = BROADCAST_PUSH_DATA_INTENT_ACTION
+    putExtra(BROADCAST_PUSH_DATA_EXTRA_NAME, remoteMessage.data["message"])
+    sendBroadcast(this)
+}
+```
+`!it is recomended not to share BROADCAST_PUSH_DATA_INTENT_ACTION and BROADCAST_PUSH_DATA_EXTRA_NAME with anyone!`<br>
+where:<br>
+BROADCAST_PUSH_DATA_INTENT_ACTION: String - intent action that will be used to receive the broadcast.
+BROADCAST_PUSH_DATA_EXTRA_NAME: String - extra key that will be used to get push data from the broadcast.
+
+
+Such intent will contain the push data messages in it's extras as String.
+
+You can obtain it using BroadcastReceiver.
+
+The broadcast can be received using BroadcastReceiver in your code like this:
+```kotlin
+    private val mPlugInReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                BROADCAST_PUSH_DATA_INTENT_ACTION-> {
+                    intent.extras?.let {
+                        Log.d("TAG1", it.getString(BROADCAST_PUSH_DATA_EXTRA_NAME).toString())
+                    }
+                }
+            }
+        }
+    }
+```
+
+
+Do not forget to register the receiver, for example in your activity:
+```kotlin
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter()
+        filter.addAction(BROADCAST_PUSH_DATA_INTENT_ACTION)
+        registerReceiver(mPlugInReceiver, filter)
+    }
+```
+
+
+It is recommended to override the PushKFirebaseService methods as shown below
+
+```kotlin
+class MyPushKFirebaseService : PushKFirebaseService(
+    summaryNotificationTitleAndText = Pair("title", "text"),
+    notificationIconResourceId = android.R.drawable.ic_notification_overlay
+) {
+    
+    /**
+     * Called when data push is received from the Messaging Hub
+     */
+    override fun onReceiveDataPush(
+        appIsInForeground: Boolean,
+        isDoNotDisturbModeActive: Boolean,
+        areNotificationsEnabled: Boolean,
+        isNotificationChannelMuted: Boolean,
+        remoteMessage: RemoteMessage
+    ) {
+        super.onReceiveDataPush(
+            appIsInForeground,
+            isDoNotDisturbModeActive,
+            areNotificationsEnabled,
+            isNotificationChannelMuted,
+            remoteMessage
+        )
+
+        //can be used to configure, for example set "isDoNotDisturbModeActive" to false,
+        // to send notifications in "Do not disturb mode" anyways
+//        super.onReceiveDataPush(
+//            appIsInForeground = appIsInForeground,
+//            isDoNotDisturbModeActive = false,
+//            areNotificationsEnabled = areNotificationsEnabled,
+//            isNotificationChannelMuted = isNotificationChannelMuted,
+//            remoteMessage = remoteMessage
+//        )
+    }
+
+    /**
+     * Prepares NotificationCompat.Builder object for showing
+     */
+    override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
+        return super.prepareNotification(data)
+        //can customize NotificationCompat.Builder object here, e.g.:
+//        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
+//        notificationConstruct?.apply {
+//            setContentText("some new text")
+//        }
+//        return notificationConstruct
+    }
+
+    /**
+     * Callback - when notification is sent
+     */
+    override fun onNotificationSent(
+        appIsInForeground: Boolean,
+        isDoNotDisturbModeActive: Boolean,
+        areNotificationsEnabled: Boolean,
+        isNotificationChannelMuted: Boolean,
+        remoteMessage: RemoteMessage
+    ) {
+        super.onNotificationSent(
+            appIsInForeground,
+            isDoNotDisturbModeActive,
+            areNotificationsEnabled,
+            isNotificationChannelMuted,
+            remoteMessage
+        )
+    }
+
+    /**
+     * Callback - when notification will not be sent
+     */
+    override fun onNotificationWontBeSent(
+        appIsInForeground: Boolean,
+        isDoNotDisturbModeActive: Boolean,
+        areNotificationsEnabled: Boolean,
+        isNotificationChannelMuted: Boolean,
+        remoteMessage: RemoteMessage
+    ) {
+        super.onNotificationWontBeSent(
+            appIsInForeground,
+            isDoNotDisturbModeActive,
+            areNotificationsEnabled,
+            isNotificationChannelMuted,
+            remoteMessage
+        )
+    }
+    
+    /**
+     * Called when a message is received from firebase.
+     * @param remoteMessage a received message.
+     */
+    override fun onMessageReceived(remoteMessage: RemoteMessage) { 
+        super.onMessageReceived(remoteMessage)
+        
+        if (remoteMessage.data.isNotEmpty() && remoteMessage.data["source"] == "Messaging HUB") {
+            sendDataPushBroadcast(remoteMessage)
+        }
+
+    }
+    
+    
+    private fun sendDataPushBroadcast(remoteMessage: RemoteMessage) {
+        try {
+            Intent().apply {
+                action = BROADCAST_PUSH_DATA_INTENT_ACTION
+                putExtra(BROADCAST_PUSH_DATA_EXTRA_NAME, remoteMessage.data["message"])
+                sendBroadcast(this)
+            }
+            Log.d("TAG2", "datapush broadcast success")
+        } catch (e: Exception) {
+            Log.d("ERROR","datapush broadcast error: ${Log.getStackTraceString(e)}")
+        }
+    }
+
+}
+```
+
+### Configure notifications
+
+You can configure your notifications by passing the following parameters into the constructor:
+* `summaryNotificationTitleAndText = Pair("title", "text")`
+
+Summary notification title and text <title, text>, used for displaying a "summary notification" which serves as a root notification for other notifications
+
+Notifications will not be bundled(grouped) if null
+
+Learn more: https://developer.android.com/training/notify-user/group
+
+* `notificationIconResourceId= android.R.drawable.ic_notification_overlay`
+
+An icon resource id, this will be used as small icon for notifications
+
+### Specifying notification style
+
+It can be achieved by overriding the `prepareNotification()` method.
+
+`You don't have to override the method if you want default behavior`
+
+* Specifying one of the styles, provided by the SDK:
+
+```kotlin
+    override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
+        //return super.prepareNotification(data)
+        //can customize NotificationCompat.Builder object here, e.g.:
+        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
+       
+        return notificationConstruct
+    }
+```
+
+Current styles are:
+```kotlin
+enum class NotificationStyle {
+        /**
+         * Shows notification without a style;
+         * Text will be displayed as single line;
+         * Will display the picture as large icon if push message has one
+         */
+        NO_STYLE,
+
+        /**
+         * Default style (Recommended);
+         * Sets "Big text" style to allow multiple lines of text;
+         * Will display the picture as large icon if push message has one
+         */
+        BIG_TEXT,
+
+        /**
+         * Shows image as big picture;
+         * Or uses default style (no style) if image can not be displayed
+         */
+        BIG_PICTURE
+    }
+```
+
+* Manually chaining your style to the `NotificationCompat.Builder` object:
+
+```kotlin
+override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
+        //return super.prepareNotification(data)
+        //can customize NotificationCompat.Builder object here, e.g.:
+        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, PushSdkNotificationManager.NotificationStyle.NO_STYLE)
+        notificationConstruct?.apply {
+            setContentTitle("some new text")
+            setContentText("some new text")
+            setStyle(NotificationCompat.BigTextStyle())
+        }
+        return notificationConstruct
+    }
+```
+
+
+***
 # SDK functions description
 
 All this functions are available from PushSDK class. For using it, create this class new instance first.
 
-***
+
 * new device registration. Register your device on push server
 ```Kotlin
 fun registerNewDevice(
