@@ -156,7 +156,7 @@ class PushSdkNotificationManager(
                     setAutoCancel(true)
                     setContentTitle(message.title)
                     setContentText(message.body)
-                    setSmallIcon(android.R.drawable.ic_notification_overlay)
+                    setSmallIcon(notificationIconResourceId)
                     setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
 
                     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {
