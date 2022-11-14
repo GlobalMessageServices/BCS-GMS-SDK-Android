@@ -111,12 +111,12 @@ allprojects {
     }
 }
 ```
-Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.2
+Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.3
 ```Gradle
 dependencies {
     ...
     //or use a newer version if available
-    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.2'
+    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.3'
 }
 ```
 To use http protocol instead of https, add android:usesCleartextTraffic="true" to your application tag inside android manifest

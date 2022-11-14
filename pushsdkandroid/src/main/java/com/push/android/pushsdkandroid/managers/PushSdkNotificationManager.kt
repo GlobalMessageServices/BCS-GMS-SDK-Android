@@ -4,9 +4,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.service.notification.StatusBarNotification
 import android.util.Log
@@ -20,6 +22,7 @@ import com.push.android.pushsdkandroid.utils.PushSDKLogger
 import java.net.URL
 import java.util.*
 import kotlin.random.Random
+
 
 /**
  * The SDK's notification manager; Used to display notifications and check availability
@@ -158,6 +161,23 @@ class PushSdkNotificationManager(
                     setContentText(message.body)
                     setSmallIcon(notificationIconResourceId)
                     setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+
+                    if (message.button != null) {
+                        val btnText = message.button.text
+                        val btnURL = message.button.url
+                        if (btnText != null && btnText.isNotEmpty() && btnURL != null && btnURL.isNotEmpty()) {
+                            //an intent for action button
+                            val browserIntent =
+                                Intent(Intent.ACTION_VIEW, Uri.parse(btnURL))
+                            val btnPendingIntent = PendingIntent.getActivity(
+                                context,
+                                1,
+                                browserIntent,
+                                PendingIntent.FLAG_IMMUTABLE
+                            )
+                            addAction(android.R.drawable.btn_default_small, btnText, btnPendingIntent)
+                        }
+                    }
 
                     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {
                         context.packageManager.getLaunchIntentForPackage(context.applicationInfo.packageName)
