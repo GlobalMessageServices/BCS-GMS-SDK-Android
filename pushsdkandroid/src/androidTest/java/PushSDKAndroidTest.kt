@@ -1,15 +1,11 @@
 import android.content.Context
-import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.firebase.messaging.RemoteMessage
-import com.google.gson.Gson
 import com.push.android.pushsdkandroid.PushSDK
 import com.push.android.pushsdkandroid.core.APIHandler
 import com.push.android.pushsdkandroid.core.SharedPreferencesHandler
 import com.push.android.pushsdkandroid.managers.PushSdkNotificationManager
-import com.push.android.pushsdkandroid.models.PushDataMessageImageModel
-import com.push.android.pushsdkandroid.models.PushDataMessageModel
 import com.push.android.pushsdkandroid.utils.Info
 import junit.framework.TestCase
 import org.junit.Before
@@ -24,8 +20,11 @@ class PushSDKAndroidTest {
     private lateinit var apiHandler: APIHandler
     private lateinit var notificationManager: PushSdkNotificationManager
     private lateinit var message: String
+    private lateinit var message2: String
     private lateinit var remoteMessage: RemoteMessage
+    private lateinit var remoteMessage2: RemoteMessage
     private val map: HashMap<String, String> = HashMap()
+    private val map2: HashMap<String, String> = HashMap()
     private lateinit var sharedPreferencesHandler: SharedPreferencesHandler
 
     @Before
@@ -35,10 +34,16 @@ class PushSDKAndroidTest {
         apiHandler = APIHandler(appContext)
         notificationManager = PushSdkNotificationManager(appContext, Pair("source", "message"))
         sharedPreferencesHandler = SharedPreferencesHandler(appContext)
-        message = "{\"button\":{},\"image\":{\"url\":\"https://test_image.jpg\"},\"partner\":\"push\",\"phone\":\"0123456789\",\"messageId\":\"6c000000-4b8f-11ed-972a-0000006010000\",\"time\":\"2022-06-22T07:34:53.738326+00\",\"body\":\"Test Message Android\",\"title\":\"Test title Android\"}"
+        message =
+            "{\"button\":{},\"image\":{\"url\":\"https://test_image.jpg\"},\"partner\":\"push\",\"phone\":\"0123456789\",\"messageId\":\"6c000000-4b8f-11ed-972a-0000006010000\",\"time\":\"2022-06-22T07:34:53.738326+00\",\"body\":\"Test Message Android\",\"title\":\"Test title Android\"}"
+        message2 =
+            "{\"button\":{\"text\":\"click\",\"url\":\"https://www.gms-worldwide.com/\"},\"image\":{\"url\":\"https://test_image.jpg\"},\"partner\":\"push\",\"phone\":\"0123456789\",\"messageId\":\"6c000000-4b8f-11ed-972a-0000006010000\",\"time\":\"2022-06-22T07:34:53.738326+00\",\"body\":\"Test Message Android\",\"title\":\"Test title Android\"}"
         map["source"] = "Messaging HUB"
-        map["message"] = message.toString()
+        map["message"] = message
         remoteMessage = RemoteMessage.Builder("internal").setData(map).build()
+        map2["source"] = "Messaging HUB"
+        map2["message"] = message2
+        remoteMessage2 = RemoteMessage.Builder("internal").setData(map2).build()
     }
 
 
@@ -65,7 +70,7 @@ class PushSDKAndroidTest {
     @Test
     @Throws(Exception::class)
     fun testConstructNotification() {
-       val construct1 = notificationManager.constructNotification(
+        val construct1 = notificationManager.constructNotification(
             remoteMessage.data,
             PushSdkNotificationManager.NotificationStyle.NO_STYLE
         )
@@ -79,9 +84,15 @@ class PushSDKAndroidTest {
             remoteMessage.data,
             PushSdkNotificationManager.NotificationStyle.BIG_PICTURE
         )
+
+        val construct4 = notificationManager.constructNotification(
+            remoteMessage2.data,
+            PushSdkNotificationManager.NotificationStyle.BIG_TEXT
+        )
         println(construct1)
         println(construct2)
         println(construct3)
+        println(construct4)
 
         val isSent = construct2?.let { notificationManager.sendNotification(it) }
 
@@ -91,7 +102,8 @@ class PushSDKAndroidTest {
     @Test
     @Throws(Exception::class)
     fun testIsChannelMuted() {
-        val result = notificationManager.isNotificationChannelMuted(PushSdkNotificationManager.DEFAULT_NOTIFICATION_CHANNEL_ID)
+        val result =
+            notificationManager.isNotificationChannelMuted(PushSdkNotificationManager.DEFAULT_NOTIFICATION_CHANNEL_ID)
         println(result)
     }
 
@@ -280,15 +292,3 @@ class PushSDKAndroidTest {
         println(Info.getPhoneType(appContext))
     }
 }
-
-
-internal data class MessageModel(
-    val messageId: String,
-    val title: String,
-    val body: String,
-    val image: MessageImageModel,
-)
-
-internal data class MessageImageModel(
-    val url: String
-)
