@@ -111,12 +111,12 @@ allprojects {
     }
 }
 ```
-Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.2
+Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.3
 ```Gradle
 dependencies {
     ...
     //or use a newer version if available
-    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.2'
+    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.3'
 }
 ```
 To use http protocol instead of https, add android:usesCleartextTraffic="true" to your application tag inside android manifest
@@ -133,7 +133,7 @@ To use http protocol instead of https, add android:usesCleartextTraffic="true" t
 ## Extend the PushKFirebaseService
 Create a class that extends PushKFirebaseService<br>
 Specify title and text which may be displayed by the system in the "summary notification".<br>
-Read more about receiving push messages and displaying notifications using the PushSDK [here](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/wiki/Receiving-push-messages-and-showing-notifications).
+Read more about receiving push messages and displaying notifications using the PushSDK [here](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#receiving-push-messages).
 
 ```Kotlin
 class MyPushKFirebaseService : PushKFirebaseService(
