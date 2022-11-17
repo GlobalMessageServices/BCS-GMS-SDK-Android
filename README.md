@@ -133,7 +133,7 @@ To use http protocol instead of https, add android:usesCleartextTraffic="true" t
 ## Extend the PushKFirebaseService
 Create a class that extends PushKFirebaseService<br>
 Specify title and text which may be displayed by the system in the "summary notification".<br>
-Read more about receiving push messages and displaying notifications using the PushSDK [here](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/wiki/Receiving-push-messages-and-showing-notifications).
+Read more about receiving push messages and displaying notifications using the PushSDK [here](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#receiving-push-messages).
 
 ```Kotlin
 class MyPushKFirebaseService : PushKFirebaseService(
