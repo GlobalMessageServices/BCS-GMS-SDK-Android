@@ -11,7 +11,7 @@ Get started by visiting:
 ### Documentation:
 https://javadoc.jitpack.io/com/github/GlobalMessageServices/Hyber-GMS-SDK-Android/v1.0.0.55-RELEASE/javadoc/index.html
 
-**RECOMMENDED VERSION: v1.0.0.55-RELEASE**
+**RECOMMENDED VERSION: v1.0.0.56-RELEASE**
 
 **RECOMMENDED REMOTE API VERSION: 3.0**
 
