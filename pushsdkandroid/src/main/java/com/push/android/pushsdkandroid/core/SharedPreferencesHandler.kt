@@ -2,12 +2,31 @@ package com.push.android.pushsdkandroid.core
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 
 @Suppress("unused")
 internal class SharedPreferencesHandler(context: Context) {
     private val preferenceDatabase = "push_k_database"
     private var sharedPref: SharedPreferences =
-        context.applicationContext.getSharedPreferences(preferenceDatabase, Context.MODE_PRIVATE)
+        getEncryptedSharedPref(preferenceDatabase, context)
+
+
+    private fun getEncryptedSharedPref(databaseShPref: String, context: Context): SharedPreferences {
+        return EncryptedSharedPreferences.create(
+            context,
+            databaseShPref,
+            getMasterKey(context),
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
+
+    private fun getMasterKey(context: Context): MasterKey {
+        return MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+    }
 
     fun saveString(KEY_NAME: String, text: String) {
         val editor: SharedPreferences.Editor = sharedPref.edit()
