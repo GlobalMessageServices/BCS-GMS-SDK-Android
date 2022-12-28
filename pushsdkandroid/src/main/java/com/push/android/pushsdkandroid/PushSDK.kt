@@ -56,6 +56,11 @@ class PushSDK(
          */
         const val NOTIFICATION_CLICK_PUSH_DATA_EXTRA_NAME = "data"
 
+        /**
+         * Name of the extra inside the intent that broadcasts bubble push data
+         */
+        const val NOTIFICATION_BUBBLES_PUSH_DATA_EXTRA_NAME = "data"
+
     }
 
     /**
