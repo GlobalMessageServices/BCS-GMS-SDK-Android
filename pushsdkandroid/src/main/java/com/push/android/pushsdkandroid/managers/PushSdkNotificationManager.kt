@@ -50,9 +50,7 @@ class PushSdkNotificationManager(
     private val context: Context,
     private val summaryNotificationTitleAndText: Pair<String, String>?,
     private val notificationIconResourceId: Int = android.R.drawable.ic_notification_overlay,
-    private val bubbleIconResourceId: Int = android.R.drawable.ic_dialog_email,
-    private val bubbleIntent: Intent? = null,
-    private val bubbleSettings: BubbleSettings? = null
+    private val bubbleIconResourceId: Int = android.R.drawable.ic_dialog_email
 ) {
     /**
      * Notification constants
@@ -165,7 +163,9 @@ class PushSdkNotificationManager(
      */
     fun constructNotification(
         data: Map<String, String>,
-        notificationStyle: NotificationStyle
+        notificationStyle: NotificationStyle,
+        bubbleIntent: Intent? = null,
+        bubbleSettings: BubbleSettings = BubbleSettings()
     ): NotificationCompat.Builder? {
 
         try {
@@ -255,7 +255,7 @@ class PushSdkNotificationManager(
                             }
                             NotificationStyle.BUBBLES -> {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                    if (!setBubble(this, message, data)) {
+                                    if (!setBubble(this, message, data, bubbleIntent, bubbleSettings)) {
                                         getBitmapFromURL(message.image.url)?.let {
                                             setLargeIcon(it)
                                         }
@@ -292,7 +292,9 @@ class PushSdkNotificationManager(
     private fun setBubble(
         builder: NotificationCompat.Builder,
         message: PushDataMessageModel,
-        data: Map<String, String>
+        data: Map<String, String>,
+        bubbleIntent: Intent?,
+        bubbleSettings: BubbleSettings?
     ): Boolean {
         if (bubbleIntent != null && bubbleSettings != null) {
             bubbleIntent.setAction(Intent.ACTION_VIEW)

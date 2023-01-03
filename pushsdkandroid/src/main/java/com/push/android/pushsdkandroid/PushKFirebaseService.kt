@@ -4,7 +4,6 @@ Service for Firebase Push notification messaging
 
 package com.push.android.pushsdkandroid
 
-import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
@@ -16,7 +15,6 @@ import com.push.android.pushsdkandroid.core.APIHandler
 import com.push.android.pushsdkandroid.core.PushSdkSavedDataProvider
 import com.push.android.pushsdkandroid.managers.PushSdkNotificationManager
 import com.push.android.pushsdkandroid.models.PushDataMessageModel
-import com.push.android.pushsdkandroid.settings.BubbleSettings
 import com.push.android.pushsdkandroid.utils.Info
 import com.push.android.pushsdkandroid.utils.PushSDKLogger
 import kotlinx.coroutines.CoroutineScope
@@ -47,8 +45,6 @@ open class PushKFirebaseService(
     private lateinit var pushSdkSavedDataProvider: PushSdkSavedDataProvider
     private lateinit var apiHandler: APIHandler
     lateinit var pushSdkNotificationManager: PushSdkNotificationManager
-    var bubbleIntent: Intent? = null
-    var bubbleSettings: BubbleSettings = BubbleSettings()
 
     /**
      * Called when the service is created
@@ -61,9 +57,7 @@ open class PushKFirebaseService(
             this,
             summaryNotificationTitleAndText,
             notificationIconResourceId,
-            bubbleIconResourceId,
-            bubbleIntent,
-            bubbleSettings
+            bubbleIconResourceId
         )
         PushSDKLogger.debug(applicationContext, "${javaClass.simpleName}.onCreate: service created")
 

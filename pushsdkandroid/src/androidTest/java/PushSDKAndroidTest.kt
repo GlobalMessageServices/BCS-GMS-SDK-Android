@@ -34,10 +34,7 @@ class PushSDKAndroidTest {
         appContext = InstrumentationRegistry.getInstrumentation().targetContext
         pushSDK = PushSDK(appContext, "https://example.io/api/3.0/")
         apiHandler = APIHandler(appContext)
-        val bubbleIntent = Intent()
-        val bubbleSettings = BubbleSettings()
-        notificationManager = PushSdkNotificationManager(appContext, Pair("source", "message"),
-            bubbleIntent = bubbleIntent, bubbleSettings = bubbleSettings)
+        notificationManager = PushSdkNotificationManager(appContext, Pair("source", "message"))
         sharedPreferencesHandler = SharedPreferencesHandler(appContext)
         message =
             "{\"button\":{},\"image\":{\"url\":\"https://test_image.jpg\"},\"partner\":\"push\",\"phone\":\"0123456789\",\"messageId\":\"6c000000-4b8f-11ed-972a-0000006010000\",\"time\":\"2022-06-22T07:34:53.738326+00\",\"body\":\"Test Message Android\",\"title\":\"Test title Android\"}"
@@ -105,7 +102,9 @@ class PushSDKAndroidTest {
         //Construct with bubble style
         val constructBubble = notificationManager.constructNotification(
             remoteMessage2.data,
-            PushSdkNotificationManager.NotificationStyle.BUBBLES
+            PushSdkNotificationManager.NotificationStyle.BUBBLES,
+            bubbleIntent = Intent(),
+            bubbleSettings = BubbleSettings()
         )
 
         println(construct1)
