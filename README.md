@@ -3,13 +3,13 @@
 
 ### Table of contents
 1. [Add Firebase cloud messaging to your project](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#add-firebase-cloud-messaging-to-your-project)
-1. [Get credentials for your app using Android Studio](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#get-credentials-for-your-app-using-android-studio)
-1. [Add the SDK to your project](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#add-the-sdk-to-your-project)
-1. [Extend the PushKFirebaseService](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#extend-the-pushkfirebaseservice)
-1. [Start using the SDK](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#start-using-the-sdk)
-1. [Receiving push messages](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#receiving-push-messages)
-1. [SDK functions description](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#sdk-functions-description)
-
+2. [Get credentials for your app using Android Studio](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#get-credentials-for-your-app-using-android-studio)
+3. [Add the SDK to your project](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#add-the-sdk-to-your-project)
+4. [Extend the PushKFirebaseService](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#extend-the-pushkfirebaseservice)
+5. [Start using the SDK](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#start-using-the-sdk)
+6. [Receiving push messages](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#receiving-push-messages)
+7. [SDK functions description](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#sdk-functions-description)
+8. [Bubbles](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#bubbles)
 ***
 
 ## Add Firebase cloud messaging to your project
@@ -111,12 +111,12 @@ allprojects {
     }
 }
 ```
-Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.3
+Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.4
 ```Gradle
 dependencies {
     ...
     //or use a newer version if available
-    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.3'
+    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.4'
 }
 ```
 To use http protocol instead of https, add android:usesCleartextTraffic="true" to your application tag inside android manifest
@@ -371,7 +371,8 @@ It is recommended to override the PushKFirebaseService methods as shown below
 ```kotlin
 class MyPushKFirebaseService : PushKFirebaseService(
     summaryNotificationTitleAndText = Pair("title", "text"),
-    notificationIconResourceId = android.R.drawable.ic_notification_overlay
+    notificationIconResourceId = android.R.drawable.ic_notification_overlay,
+	bubbleIconResourceId = android.R.drawable.ic_dialog_email
 ) {
     
     /**
@@ -487,17 +488,16 @@ class MyPushKFirebaseService : PushKFirebaseService(
 ### Configure notifications
 
 You can configure your notifications by passing the following parameters into the constructor:
-* `summaryNotificationTitleAndText = Pair("title", "text")`
-
-Summary notification title and text <title, text>, used for displaying a "summary notification" which serves as a root notification for other notifications
-
-Notifications will not be bundled(grouped) if null
-
+* `summaryNotificationTitleAndText = Pair("title", "text")` <br>
+Summary notification title and text <title, text>, used for displaying a "summary notification" which serves as a root notification for other notifications <br>
+Notifications will not be bundled(grouped) if null <br>
 Learn more: https://developer.android.com/training/notify-user/group
 
-* `notificationIconResourceId= android.R.drawable.ic_notification_overlay`
-
+* `notificationIconResourceId= android.R.drawable.ic_notification_overlay` <br>
 An icon resource id, this will be used as small icon for notifications
+
+* `bubbleIconResourceId: Int = android.R.drawable.ic_dialog_email` <br>
+  An icon resource id, this will be used as icon for Bubbles.
 
 ### Specifying notification style
 
@@ -538,11 +538,17 @@ enum class NotificationStyle {
          * Shows image as big picture;
          * Or uses default style (no style) if image can not be displayed
          */
-        BIG_PICTURE
+        BIG_PICTURE,
+	
+		/**
+	 	* Shows notification as bubble
+	 	* Uses default style (no style) if bubble can not be displayed
+	 	*/
+		BUBBLES
     }
 ```
 
-* Manually chaining your style to the `NotificationCompat.Builder` object:
+* Manually changing your style to the `NotificationCompat.Builder` object:
 
 ```kotlin
 override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
@@ -558,6 +564,256 @@ override fun prepareNotification(data: Map<String, String>): NotificationCompat.
     }
 ```
 
+
+***
+# Bubbles
+## Start using [Bubbles](https://developer.android.com/develop/ui/views/notifications/bubbles).
+### The next steps are required to start using Bubbles:
+
+* Create BubbleActivity and add it to the AndroidManifest.xml <br>
+```Gradle
+<application
+...>
+<activity
+            android:name=".BubbleActivity"
+            android:exported="true"
+            android:allowEmbedded="true"
+            android:documentLaunchMode="always"
+            android:resizeableActivity="true" />
+</application>
+```
+
+
+* Manually chang the `NotificationCompat.Builder` object style to NotificationStyle.BUBBLES and pass Intent object with BubbleActivity to the called function constructNotification <br>
+  It can be achieved by overriding the `prepareNotification()` method
+```Kotlin
+override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
+    return pushSdkNotificationManager.constructNotification(
+        data,
+        PushSdkNotificationManager.NotificationStyle.BUBBLES,
+        bubbleIntent = Intent(this, BubbleActivity::class.java)
+  
+}
+```
+
+### Simple example of BubbleActivity, its layout(s) and adapter.
+
+* BubbleActivity.kt
+```Kotlin
+class BubbleActivity : AppCompatActivity() {
+
+    private lateinit var messageAdapter: MessageAdapter
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_bubble)
+
+
+        
+        val messagesList: MutableList<ChatMessage> = ArrayList()
+
+
+        messageAdapter = MessageAdapter(messagesList)
+        messages.adapter = messageAdapter
+        messages.layoutManager = LinearLayoutManager(this)
+
+        
+        send.setOnClickListener {
+            messagesList.add(ChatMessage(input.text.toString(), false))
+
+            input.text.clear()
+
+        }
+
+
+        //Get bubble extra data (push message) from intent
+        intent.extras?.let{
+            val extra = it.getString(PushSDK.NOTIFICATION_BUBBLES_PUSH_DATA_EXTRA_NAME)
+            val message = Gson().fromJson(extra, com.gms_worldwide.push.app.models.PushDataMessageModel::class.java)
+            messagesList.add(ChatMessage(message.body, true))
+        }
+
+    }
+}
+
+data class ChatMessage(
+    val text: String,
+    val isIncoming: Boolean
+
+)
+```
+
+* activity_bubble.xml
+```XML
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/chat"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/messages"
+        style="?attr/buttonBarStyle"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:scrollbars="vertical"
+        />
+
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/input_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/windowBackground"
+        android:elevation="4dp"
+        android:minHeight="?attr/actionBarSize">
+
+
+        <EditText
+            android:id="@+id/input"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:hint="@string/type_message"
+            android:imeOptions="actionSend"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/send" />
+
+
+        <ImageButton
+            android:id="@+id/send"
+            style="?attr/buttonBarNeutralButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:contentDescription="Send"
+            app:layout_constraintBottom_toBottomOf="@id/input"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.983"
+            app:layout_constraintStart_toEndOf="@id/input"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="1.0"
+            app:srcCompat="@drawable/ic_send"
+            app:tint="?attr/colorAccent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</LinearLayout>
+```
+
+* item_message.xml
+```XML
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/item_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:weightSum="2"
+    >
+
+
+    <TextView
+        android:id="@+id/message_item"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="16sp"
+        />
+
+</LinearLayout>
+```
+
+* MessageAdapter.kt
+```Kotlin
+class MessageAdapter(private val messages: MutableList<ChatMessage>) :
+    RecyclerView.Adapter<MessageAdapter.MessageViewHolder>() {
+
+    class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
+
+        return MessageViewHolder(
+            LayoutInflater.from(parent.context).inflate(
+                R.layout.item_message,
+                parent,
+                false
+            )
+        )
+    }
+
+    override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
+        val currentMessage = messages[position]
+
+        holder.itemView.apply {
+            item_layout.setPadding(16, 16, 16, 16)
+            if (!currentMessage.isIncoming) {
+                message_item.gravity = Gravity.END
+                item_layout.gravity = Gravity.END
+            }
+            message_item.text = currentMessage.text
+
+        }
+    }
+
+    override fun getItemCount(): Int {
+        return messages.size
+    }
+}
+```
+
+## Changing Bubble settings
+
+### You can change Bubble settings by passing the `BubbleSettings` object to the called function constructNotification
+
+```Kotlin
+override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
+    return pushSdkNotificationManager.constructNotification(
+        data,
+        PushSdkNotificationManager.NotificationStyle.BUBBLES,
+        bubbleIntent = Intent(this, BubbleActivity::class.java),
+        bubbleSettings = BubbleSettings(shortLabel = "My custom label")
+    )
+}
+```
+
+### All current Bubble settings:
+
+*  isDefaultBubbleIconUsed, Boolean. Sets whether bubbleIconResourceId will be used or image from push message. <br>
+   Default value is true. <br>
+   If set to false and push message does not contain image, bubbleIconResourceId will be used.
+
+* [setImportant](https://developer.android.com/reference/android/app/Person.Builder#setImportant(boolean)), Boolean. Sets whether this is important Person the push message is sent from. <br>
+  Default value is true.
+
+* [shortLabel](https://developer.android.com/reference/androidx/core/content/pm/ShortcutInfoCompat.Builder#setShortLabel(java.lang.CharSequence)), String. Sets the custom short title of a shortcut. <br>
+  Default value is 'PushSDK chat'.
+
+* [setLongLived](https://developer.android.com/reference/androidx/core/content/pm/ShortcutInfoCompat.Builder#setLongLived(boolean)), Boolean. Sets if a shortcut would be valid even if it has been unpublished/invisible by the app. <br>
+  Default value is true.
+
+* [setAutoExpandBubble](https://developer.android.com/reference/androidx/core/app/NotificationCompat.BubbleMetadata.Builder#setAutoExpandBubble(boolean)), Boolean. If set and the app creating the bubble is in the foreground, the bubble will be posted in its expanded state. <br>
+  Default value is true.
+
+* [setSuppressNotification](https://developer.android.com/reference/androidx/core/app/NotificationCompat.BubbleMetadata.Builder#setSuppressNotification(boolean)), Boolean. If set the bubble will be posted without the associated notification in the notification shade. <br>
+  Default value is false.
+
+* [setDesiredHeight](https://developer.android.com/reference/androidx/core/app/NotificationCompat.BubbleMetadata.Builder#setDesiredHeight(int)), Int. Sets the desired height in DPs for the app content defined by setIntent. <br>
+  Default value is 600.
 
 ***
 # SDK functions description

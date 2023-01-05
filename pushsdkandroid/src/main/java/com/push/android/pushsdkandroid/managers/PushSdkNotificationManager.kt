@@ -12,14 +12,23 @@ import android.net.Uri
 import android.os.Build
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.Person
+import androidx.core.content.LocusIdCompat
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.gson.Gson
 import com.push.android.pushsdkandroid.PushSDK
 import com.push.android.pushsdkandroid.models.PushDataMessageModel
+import com.push.android.pushsdkandroid.settings.BubbleSettings
 import com.push.android.pushsdkandroid.utils.PushSDKLogger
 import java.net.URL
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.*
 import kotlin.random.Random
 
@@ -34,11 +43,13 @@ import kotlin.random.Random
  * used for displaying a "summary notification", which serves as a root notification for other notifications
  * notifications will not be bundled(grouped) if null; Ignored if api level is below android 7
  * @param notificationIconResourceId Notification small icon
+ * @param bubbleIconResourceId Bubble icon
  */
 class PushSdkNotificationManager(
     private val context: Context,
     private val summaryNotificationTitleAndText: Pair<String, String>?,
-    private val notificationIconResourceId: Int = android.R.drawable.ic_notification_overlay
+    private val notificationIconResourceId: Int = android.R.drawable.ic_notification_overlay,
+    private val bubbleIconResourceId: Int = android.R.drawable.ic_dialog_email
 ) {
     /**
      * Notification constants
@@ -78,6 +89,17 @@ class PushSdkNotificationManager(
          * tag for summary notification
          */
         const val SUMMARY_NOTIFICATION_TAG = "pushsdk_s_b_n"
+
+        /**
+         * shortcut category for bubble notification
+         */
+        const val NOTIFICATION_SHORTCUT_CATEGORY =
+            "com.push.android.pushsdkandroid.default_category"
+
+        /**
+         * shortcut id for bubble notification
+         */
+        const val NOTIFICATION_SHORTCUT_ID = "com.push.android.pushsdkandroid.shortcut_id"
     }
 
     /**
@@ -103,7 +125,13 @@ class PushSdkNotificationManager(
          * Shows image as big picture;
          * Or uses default style (no style) if image can not be displayed
          */
-        BIG_PICTURE
+        BIG_PICTURE,
+
+        /**
+         * Shows notification as bubble
+         * Uses default style (no style) if bubble can not be displayed
+         */
+        BUBBLES
     }
 
     /**
@@ -134,7 +162,9 @@ class PushSdkNotificationManager(
      */
     fun constructNotification(
         data: Map<String, String>,
-        notificationStyle: NotificationStyle
+        notificationStyle: NotificationStyle,
+        bubbleIntent: Intent? = null,
+        bubbleSettings: BubbleSettings = BubbleSettings()
     ): NotificationCompat.Builder? {
 
         try {
@@ -222,6 +252,19 @@ class PushSdkNotificationManager(
                                     )
                                 }
                             }
+                            NotificationStyle.BUBBLES -> {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                    if (!setBubble(this, message, data, bubbleIntent, bubbleSettings)) {
+                                        getBitmapFromURL(message.image.url)?.let {
+                                            setLargeIcon(it)
+                                        }
+                                    }
+                                } else {
+                                    getBitmapFromURL(message.image.url)?.let {
+                                        setLargeIcon(it)
+                                    }
+                                }
+                            }
                         }
                     } else {
                         setGroupSummary(true)
@@ -235,6 +278,116 @@ class PushSdkNotificationManager(
             return null
         }
     }
+
+
+    /**
+     * Constructs bubble
+     * @param builder - notification builder the bubble will be added to
+     * @param message - push message PushDataMessageModel
+     * @param data - FCM push RemoteMessage's data
+     * @param bubbleIntent - intent with BubbleActivity, it is used for creating pending intent for BubbleMetadata
+     * @param bubbleSettings - settings for objects Person, ShortcutInfoCompat and BubbleMetadata
+     * @return Boolean whether the bubble was added to notification builder
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun setBubble(
+        builder: NotificationCompat.Builder,
+        message: PushDataMessageModel,
+        data: Map<String, String>,
+        bubbleIntent: Intent?,
+        bubbleSettings: BubbleSettings?
+    ): Boolean {
+        if (bubbleIntent != null && bubbleSettings != null) {
+            bubbleIntent.setAction(Intent.ACTION_VIEW)
+                .putExtra(
+                    PushSDK.NOTIFICATION_BUBBLES_PUSH_DATA_EXTRA_NAME,
+                    data["message"]
+                )
+
+
+            val icon: IconCompat = if (bubbleSettings.isDefaultBubbleIconUsed) {
+                IconCompat.createWithResource(context, bubbleIconResourceId)
+            } else {
+               val imageIcon = getBitmapFromURL(message.image.url)
+               if (imageIcon != null){
+                   IconCompat.createWithAdaptiveBitmap(imageIcon)
+               }else{
+                   IconCompat.createWithResource(context, bubbleIconResourceId)
+               }
+            }
+
+
+            val person = Person.Builder()
+                .setName(message.title)
+                .setImportant(bubbleSettings.isImportant)
+                .setIcon(icon)
+                .build()
+
+            val locusId = LocusIdCompat("com.push.android.pushsdkandroid_1")
+            val shortcut =
+                ShortcutInfoCompat.Builder(context, NOTIFICATION_SHORTCUT_ID)
+                    .setLocusId(locusId)
+                    .setShortLabel(bubbleSettings.shortLabel)
+                    .setIcon(icon)
+                    .setIsConversation()
+                    .setLongLived(bubbleSettings.isLongLived)
+                    .setCategories(setOf(NOTIFICATION_SHORTCUT_CATEGORY))
+                    .setIntent(bubbleIntent)
+                    .setPerson(person)
+                    .build()
+            ShortcutManagerCompat.pushDynamicShortcut(context, shortcut)
+
+            val messagingStyle = NotificationCompat.MessagingStyle(person)
+            val message2 = NotificationCompat.MessagingStyle.Message(
+                message.body, LocalDateTime.now().toEpochSecond(
+                    ZoneOffset.UTC
+                ), person
+            )
+            messagingStyle.addMessage(message2)
+
+            val bubblePendingIntent = PendingIntent.getActivity(
+                context,
+                2,
+                bubbleIntent,
+                flagUpdateCurrent(true)
+            )
+            val babbleData = NotificationCompat.BubbleMetadata.Builder(
+                bubblePendingIntent,
+                icon
+            )
+                .setDesiredHeight(bubbleSettings.desiredHeight)
+                .setAutoExpandBubble(bubbleSettings.isAutoExpandBubble)
+                .setSuppressNotification(bubbleSettings.isSuppressNotification)
+                .build()
+
+            builder.setShortcutId(NOTIFICATION_SHORTCUT_ID)
+            builder.bubbleMetadata = babbleData
+            builder.setLocusId(locusId)
+            builder.addPerson(person)
+            builder.setStyle(messagingStyle)
+            return true
+        }
+        return false
+
+    }
+
+
+    /**
+     * @param mutable
+     * @return pending intent flag, depending on the api level
+     */
+    private fun flagUpdateCurrent(mutable: Boolean): Int {
+        return if (mutable) {
+            if (Build.VERSION.SDK_INT >= 31) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        }
+    }
+
 
     /**
      * Build and show the notification
@@ -254,12 +407,17 @@ class PushSdkNotificationManager(
 
             NotificationManagerCompat.from(context.applicationContext).apply {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val notificationChannel = NotificationChannel(
+                        DEFAULT_NOTIFICATION_CHANNEL_ID,
+                        NOTIFICATION_CHANNEL_NAME,
+                        NotificationManager.IMPORTANCE_HIGH
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        notificationChannel.setAllowBubbles(true)
+                    }
+
                     createNotificationChannel(
-                        NotificationChannel(
-                            DEFAULT_NOTIFICATION_CHANNEL_ID,
-                            NOTIFICATION_CHANNEL_NAME,
-                            NotificationManager.IMPORTANCE_HIGH
-                        )
+                        notificationChannel
                     )
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {

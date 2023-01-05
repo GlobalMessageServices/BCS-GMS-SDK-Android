@@ -38,7 +38,8 @@ import kotlinx.coroutines.launch
  */
 open class PushKFirebaseService(
     private val summaryNotificationTitleAndText: Pair<String, String>?,
-    private val notificationIconResourceId: Int = android.R.drawable.ic_notification_overlay
+    private val notificationIconResourceId: Int = android.R.drawable.ic_notification_overlay,
+    private val bubbleIconResourceId: Int = android.R.drawable.ic_dialog_email
 ) : FirebaseMessagingService() {
 
     private lateinit var pushSdkSavedDataProvider: PushSdkSavedDataProvider
@@ -55,7 +56,8 @@ open class PushKFirebaseService(
         pushSdkNotificationManager = PushSdkNotificationManager(
             this,
             summaryNotificationTitleAndText,
-            notificationIconResourceId
+            notificationIconResourceId,
+            bubbleIconResourceId
         )
         PushSDKLogger.debug(applicationContext, "${javaClass.simpleName}.onCreate: service created")
 
