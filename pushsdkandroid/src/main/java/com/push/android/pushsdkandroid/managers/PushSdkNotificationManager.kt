@@ -44,7 +44,6 @@ import kotlin.random.Random
  * notifications will not be bundled(grouped) if null; Ignored if api level is below android 7
  * @param notificationIconResourceId Notification small icon
  * @param bubbleIconResourceId Bubble icon
- * @param bubbleIntent Bubble intent with BubbleActivity
  */
 class PushSdkNotificationManager(
     private val context: Context,
@@ -286,6 +285,8 @@ class PushSdkNotificationManager(
      * @param builder - notification builder the bubble will be added to
      * @param message - push message PushDataMessageModel
      * @param data - FCM push RemoteMessage's data
+     * @param bubbleIntent - intent with BubbleActivity, it is used for creating pending intent for BubbleMetadata
+     * @param bubbleSettings - settings for objects Person, ShortcutInfoCompat and BubbleMetadata
      * @return Boolean whether the bubble was added to notification builder
      */
     @RequiresApi(Build.VERSION_CODES.R)
