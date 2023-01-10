@@ -3,7 +3,10 @@ package com.push.android.pushsdkandroid.utils
 import android.os.Build
 import android.text.TextUtils
 import android.content.Context
+import android.content.Context.TELEPHONY_SERVICE
 import android.content.res.Configuration
+import android.telephony.TelephonyManager
+import java.util.*
 
 /**
  * Utils for getting info
@@ -44,10 +47,16 @@ internal object Info {
             val flagIsTab: Boolean =
                 context.resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK >= Configuration.SCREENLAYOUT_SIZE_LARGE
             if (flagIsTab) {
-                PushSDKLogger.debug(context, "Result: Function: get_phone_type, Class: GetInfo, flagisTab: $flagIsTab, answer: tablet")
+                PushSDKLogger.debug(
+                    context,
+                    "Result: Function: get_phone_type, Class: GetInfo, flagisTab: $flagIsTab, answer: tablet"
+                )
                 "tablet"
             } else {
-                PushSDKLogger.debug(context, "Result: Function: get_phone_type, Class: GetInfo, flagisTab: $flagIsTab, answer: phone")
+                PushSDKLogger.debug(
+                    context,
+                    "Result: Function: get_phone_type, Class: GetInfo, flagisTab: $flagIsTab, answer: phone"
+                )
                 "phone"
             }
         } catch (e: java.lang.Exception) {
@@ -92,6 +101,130 @@ internal object Info {
             phrase.append(c)
         }
         return phrase.toString()
+    }
+
+
+    /**
+     * Get current interface language
+     * @return current interface language
+     */
+    fun getLanguage(): String {
+        return Locale.getDefault().displayLanguage
+    }
+
+    /**
+     * Get current interface language iso code
+     * @return current interface language iso code
+     */
+    fun getLanguageISO(): String {
+        return Locale.getDefault().language
+    }
+
+    /**
+     * Get current interface language iso3 code
+     * @return current interface language iso3 code
+     */
+    fun getLanguageISO3(): String {
+        return Locale.getDefault().isO3Language
+    }
+
+    /**
+     * Get current interface language in English
+     * @return current interface language in English
+     */
+    fun getLanguageInEn(): String {
+        val loc = Locale(Locale.getDefault().language)
+        val locEn = Locale("en")
+        return loc.getDisplayLanguage(locEn)
+    }
+
+
+    /**
+     * Get device current time zone
+     * @return device current time zone
+     */
+    fun getDeviceTimeZone(): TimeZone {
+        return TimeZone.getDefault()
+    }
+
+    /**
+     * Get device current short(CET, GMT etc) time zone
+     * @return device current short(CET, GMT etc) time zone
+     */
+    fun getDeviceShortTimeZone(): String {
+        val tz = TimeZone.getDefault()
+        return TimeZone.getTimeZone(tz.id).getDisplayName(false, TimeZone.SHORT)
+    }
+
+
+    /**
+     * Get current country iso code by mobile network.
+     * @return device current country iso code by mobile network. If it null, returns country iso code by TimeZone region.
+     * Else return n/a
+     */
+    fun getCountryIsoCode(context: Context): String {
+        return try {
+            val tm = context.getSystemService(TELEPHONY_SERVICE) as TelephonyManager
+            if(tm != null){
+                val isoCode = tm.networkCountryIso.uppercase()
+                if (isoCode != null && isoCode.length == 2) {
+                    isoCode
+                } else {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        android.icu.util.TimeZone.getRegion(TimeZone.getDefault().id)
+                    } else {
+                        "n/a"
+                    }
+                }
+            }else{
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    android.icu.util.TimeZone.getRegion(TimeZone.getDefault().id)
+                } else {
+                    "n/a"
+                }
+            }
+
+
+        } catch (e: Exception) {
+            PushSDKLogger.error("An error was occurred while getting country iso code:\n ${e.stackTraceToString()}")
+            "n/a"
+        }
+    }
+
+    /**
+     * Get current country iso3 code
+     * @return device current country iso3 code
+     */
+    fun getCountryIso3Code(context: Context): String {
+        return try {
+            val countryIsoCode = getCountryIsoCode(context)
+            Locale("", countryIsoCode).isO3Country
+        } catch (e: Exception) {
+            "n/a"
+        }
+    }
+
+    /**
+     * Get current country name by mobile network
+     * @return country name
+     */
+    fun getCountryName(context: Context): String {
+        return try {
+            val countryIsoCode = getCountryIsoCode(context)
+            Locale("", countryIsoCode).displayCountry
+        } catch (e: Exception) {
+            "n/a"
+        }
+    }
+
+    /**
+     * Get current country name in English
+     * @return current country name in English
+     */
+    fun getCountryInEn(context: Context): String {
+        val loc = Locale("", getCountryIsoCode(context))
+        val locEn = Locale("en")
+        return loc.getDisplayCountry(locEn)
     }
 
 }

@@ -313,4 +313,10 @@ class PushSDKAndroidTest {
     fun testGetPhoneType() {
         println(Info.getPhoneType(appContext))
     }
+
+    @Test
+    @Throws(Exception::class)
+    fun testGetUserData() {
+        println(pushSDK.getUserData())
+    }
 }

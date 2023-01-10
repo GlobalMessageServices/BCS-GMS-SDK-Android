@@ -9,9 +9,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.push.android.pushsdkandroid.core.APIHandler
 import com.push.android.pushsdkandroid.core.PushSdkSavedDataProvider
-import com.push.android.pushsdkandroid.models.PushSDKAnswerResult
-import com.push.android.pushsdkandroid.models.PushServerAnswerGeneral
-import com.push.android.pushsdkandroid.models.PushServerAnswerRegister
+import com.push.android.pushsdkandroid.models.*
 import com.push.android.pushsdkandroid.models.PushServerApiResponse
 import com.push.android.pushsdkandroid.utils.Info
 import com.push.android.pushsdkandroid.utils.PushSDKLogger
@@ -497,7 +495,7 @@ class PushSDK(
                             )
                         }
                     }
-                }else{
+                } else {
                     response = PushServerAnswerGeneral(
                         710,
                         PushSDKAnswerResult.FAILED,
@@ -1033,6 +1031,42 @@ class PushSDK(
                 "unknown"
             )
         }
+    }
+
+
+    /**
+     * Get user`s device data
+     * @return UserDataModel object with fields
+     * deviceOS - device OS
+     * osVersion - version of device OS
+     * deviceModel - model of device
+     * deviceLanguage - interface language in this language
+     * deviceLanguageEn - interface language in English
+     * isoLanguageCode iso language code
+     * iso3LanguageCode iso3 language code
+     * timeZone - object of TimeZone
+     * timeZoneShort - short time zone GMT, CET etc...
+     * isoCountry - country iso code
+     * iso3Country - country iso3 code
+     * countryName - country name in device interface language
+     * countryNameEn - country name in English
+     */
+    fun getUserData(): UserDataModel {
+        return UserDataModel(
+            deviceOS = Info.getOSType(),
+            osVersion = Info.getAndroidVersion(),
+            deviceModel = Info.getDeviceName(),
+            deviceLanguage = Info.getLanguage(),
+            deviceLanguageEn = Info.getLanguageInEn(),
+            isoLanguageCode = Info.getLanguageISO(),
+            iso3LanguageCode = Info.getLanguageISO3(),
+            timeZone = Info.getDeviceTimeZone(),
+            timeZoneShort = Info.getDeviceShortTimeZone(),
+            isoCountry = Info.getCountryIsoCode(context),
+            iso3Country = Info.getCountryIso3Code(context),
+            countryName = Info.getCountryName(context),
+            countryNameEn = Info.getCountryInEn(context)
+        )
     }
 
     //TODO remove once confirmed useless
