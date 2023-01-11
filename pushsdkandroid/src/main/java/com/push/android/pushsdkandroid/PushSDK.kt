@@ -1036,20 +1036,20 @@ class PushSDK(
 
     /**
      * Get user`s device data
-     * @return UserDataModel object with fields
-     * deviceOS - device OS
-     * osVersion - version of device OS
-     * deviceModel - model of device
-     * deviceLanguage - interface language in this language
-     * deviceLanguageEn - interface language in English
-     * isoLanguageCode iso language code
-     * iso3LanguageCode iso3 language code
-     * timeZone - object of TimeZone
-     * timeZoneShort - short time zone GMT, CET etc...
-     * isoCountry - country iso code
-     * iso3Country - country iso3 code
-     * countryName - country name in device interface language
-     * countryNameEn - country name in English
+     * @return UserDataModel object with params
+     * @param deviceOS  device OS
+     * @param osVersion  version of device OS
+     * @param deviceModel  model of device
+     * @param deviceLanguage  interface language in this language
+     * @param deviceLanguageEn  interface language in English
+     * @param isoLanguageCode iso language code
+     * @param iso3LanguageCode iso3 language code
+     * @param timeZone  object of TimeZone
+     * @param timeZoneShort  short time zone GMT, CET etc...
+     * @param isoCountry  country iso code
+     * @param iso3Country  country iso3 code
+     * @param countryName  country name in device interface language
+     * @param countryNameEn  country name in English
      */
     fun getUserData(): UserDataModel {
         return UserDataModel(

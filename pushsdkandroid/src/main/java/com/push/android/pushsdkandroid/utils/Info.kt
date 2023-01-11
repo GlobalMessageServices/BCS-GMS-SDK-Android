@@ -158,8 +158,8 @@ internal object Info {
 
 
     /**
-     * Get current country iso code by mobile network.
-     * @return device current country iso code by mobile network. If it null, returns country iso code by TimeZone region.
+     * Get current country iso code in which device is located.
+     * @return device current country iso code by mobile network. If it null, returns country iso code by TimeZone region for API 24 and higher.
      * Else return n/a
      */
     fun getCountryIsoCode(context: Context): String {
@@ -205,7 +205,7 @@ internal object Info {
     }
 
     /**
-     * Get current country name by mobile network
+     * Get current country name
      * @return country name
      */
     fun getCountryName(context: Context): String {
