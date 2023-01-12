@@ -8,8 +8,8 @@
 4. [Extend the PushKFirebaseService](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#extend-the-pushkfirebaseservice)
 5. [Start using the SDK](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#start-using-the-sdk)
 6. [Receiving push messages](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#receiving-push-messages)
-7. [SDK functions description](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#sdk-functions-description)
-8. [Bubbles](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#bubbles)
+7. [Bubbles](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#bubbles)
+8. [SDK functions description](https://github.com/GlobalMessageServices/BCS-GMS-SDK-Android/blob/main/README.md#sdk-functions-description)
 ***
 
 ## Add Firebase cloud messaging to your project
@@ -111,12 +111,12 @@ allprojects {
     }
 }
 ```
-Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.4
+Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.5
 ```Gradle
 dependencies {
     ...
     //or use a newer version if available
-    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.4'
+    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.5'
 }
 ```
 To use http protocol instead of https, add android:usesCleartextTraffic="true" to your application tag inside android manifest
@@ -341,28 +341,28 @@ You can obtain it using BroadcastReceiver.
 
 The broadcast can be received using BroadcastReceiver in your code like this:
 ```kotlin
-    private val mPlugInReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                BROADCAST_PUSH_DATA_INTENT_ACTION-> {
-                    intent.extras?.let {
-                        Log.d("TAG1", it.getString(BROADCAST_PUSH_DATA_EXTRA_NAME).toString())
-                    }
+private val mPlugInReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        when (intent.action) {
+            BROADCAST_PUSH_DATA_INTENT_ACTION-> {
+                intent.extras?.let {
+                    Log.d("TAG1", it.getString(BROADCAST_PUSH_DATA_EXTRA_NAME).toString())
                 }
             }
         }
     }
+}
 ```
 
 
 Do not forget to register the receiver, for example in your activity:
 ```kotlin
-    override fun onStart() {
-        super.onStart()
-        val filter = IntentFilter()
-        filter.addAction(BROADCAST_PUSH_DATA_INTENT_ACTION)
-        registerReceiver(mPlugInReceiver, filter)
-    }
+override fun onStart() {
+    super.onStart()
+    val filter = IntentFilter()
+    filter.addAction(BROADCAST_PUSH_DATA_INTENT_ACTION)
+    registerReceiver(mPlugInReceiver, filter)
+}
 ```
 
 
@@ -508,13 +508,13 @@ It can be achieved by overriding the `prepareNotification()` method.
 * Specifying one of the styles, provided by the SDK:
 
 ```kotlin
-    override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
-        //return super.prepareNotification(data)
-        //can customize NotificationCompat.Builder object here, e.g.:
-        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
-       
-        return notificationConstruct
-    }
+override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
+    //return super.prepareNotification(data)
+    //can customize NotificationCompat.Builder object here, e.g.:
+    val notificationConstruct = pushSdkNotificationManager.constructNotification(data, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
+   
+    return notificationConstruct
+}
 ```
 
 Current styles are:
@@ -539,12 +539,12 @@ enum class NotificationStyle {
          * Or uses default style (no style) if image can not be displayed
          */
         BIG_PICTURE,
-	
-		/**
-	 	* Shows notification as bubble
-	 	* Uses default style (no style) if bubble can not be displayed
-	 	*/
-		BUBBLES
+
+        /**
+        * Shows notification as bubble
+        * Uses default style (no style) if bubble can not be displayed
+        */
+        BUBBLES
     }
 ```
 
@@ -865,4 +865,8 @@ fun sendMessageDeliveryReport(messageId: String): PushServerAnswerGeneral
 * check message queue
 ```Kotlin
 fun checkMessageQueue(): PushServerAnswerGeneral
+```
+* get user device data - device OS, OS version, device model, device interface language, time zone, country
+```Kotlin
+fun getUserData(): UserDataModel
 ```
