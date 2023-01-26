@@ -59,6 +59,16 @@ class PushSDK(
          */
         const val NOTIFICATION_BUBBLES_PUSH_DATA_EXTRA_NAME = "data"
 
+        /**
+         * Intent action when user clicks reply button
+         */
+        const val NOTIFICATION_REPLY_INTENT_ACTION = "pushsdk.notification.reply.intent"
+
+        /**
+         *
+         */
+        const val NOTIFICATION_REPLY_DATA_EXTRA_NAME = "reply.data"
+
     }
 
     /**

@@ -8,7 +8,8 @@ internal data class PushDataMessageModel(
     val title: String,
     val body: String,
     val image: PushDataMessageImageModel,
-    val button: PushDataMessageButtonModel
+    val button: PushDataMessageButtonModel,
+    val is2Way: Boolean
 )
 
 /**
