@@ -21,6 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 /**
  * A "FirebaseMessagingService based" service for handling push messages;
@@ -205,10 +206,11 @@ open class PushKFirebaseService(
             && !isNotificationChannelMuted
             && pushSdkNotificationManager.hasSpaceForNotification(true)
         ) {
-            val notificationConstruct = prepareNotification(remoteMessage.data)
+            val notificationId = pushSdkNotificationManager.getNotificationId()
+            val notificationConstruct = prepareNotification(remoteMessage.data, notificationId)
             if (notificationConstruct != null) {
                 var isNotificationSent =
-                    pushSdkNotificationManager.sendNotification(notificationConstruct)
+                    pushSdkNotificationManager.sendNotification(notificationConstruct, notificationId)
                 if (isNotificationSent) {
                     onNotificationSent(
                         appIsInForeground,
@@ -269,10 +271,11 @@ open class PushKFirebaseService(
      * @return NotificationCompat.Builder?
      * @see PushSdkNotificationManager.NotificationStyle, (https://developer.android.com/training/notify-user/group), (https://stackoverflow.com/a/41114135)
      */
-    open fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
+    open fun prepareNotification(data: Map<String, String>, notificationId: Int): NotificationCompat.Builder? {
         PushSDKLogger.debug(applicationContext, "calling prepareNotification()")
         return pushSdkNotificationManager.constructNotification(
             data,
+            notificationId,
             PushSdkNotificationManager.NotificationStyle.BIG_TEXT
         )
     }

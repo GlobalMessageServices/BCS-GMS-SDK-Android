@@ -169,6 +169,7 @@ class PushSdkNotificationManager(
      */
     fun constructNotification(
         data: Map<String, String>,
+        notificationId: Int,
         notificationStyle: NotificationStyle,
         bubbleIntent: Intent? = null,
         bubbleSettings: BubbleSettings = BubbleSettings()
@@ -234,6 +235,15 @@ class PushSdkNotificationManager(
                             PushSDK.NOTIFICATION_REPLY_DATA_EXTRA_NAME,
                             message.messageId
                         )
+                        replyIntent.putExtra(
+                            PushSDK.NOTIFICATION_TAG_EXTRA_NAME,
+                            getNotificationTag()
+                        )
+                        replyIntent.putExtra(
+                            PushSDK.NOTIFICATION_ID_EXTRA_NAME,
+                            notificationId
+                        )
+
                         var replyPendingIntent: PendingIntent =
                             PendingIntent.getBroadcast(
                                 context,
@@ -447,17 +457,18 @@ class PushSdkNotificationManager(
      * @param notificationConstruct NotificationCompat.Builder object to send
      */
     fun sendNotification(
-        notificationConstruct: NotificationCompat.Builder
+        notificationConstruct: NotificationCompat.Builder,
+        notificationId: Int
     ): Boolean {
         try {
-            //Create notification channel if it doesn't exist (mandatory for Android O and above)
-            val notificationId = Random.nextInt(
+
+            /*val notificationId = Random.nextInt(
                 DEFAULT_SUMMARY_NOTIFICATION_ID + 1,
                 Int.MAX_VALUE - 10
-            )
+            )*/
             val notification = notificationConstruct.build()
-
             NotificationManagerCompat.from(context.applicationContext).apply {
+                //Create notification channel if it doesn't exist (mandatory for Android O and above)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     val notificationChannel = NotificationChannel(
                         DEFAULT_NOTIFICATION_CHANNEL_ID,
@@ -472,22 +483,14 @@ class PushSdkNotificationManager(
                         notificationChannel
                     )
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-                    //show regular notification
-                    notify(
-                        NOTIFICATION_TAG,
-                        notificationId,
-                        notification
-                    )
-                } else {
-                    //show summary notification
-                    notify(
-                        SUMMARY_NOTIFICATION_TAG,
-                        DEFAULT_SUMMARY_NOTIFICATION_ID,
-                        notification
-                    )
 
-                }
+                //show notification
+                notify(
+                    getNotificationTag(),
+                    notificationId,
+                    notification
+                )
+
             }
             return true
         } catch (e: Exception) {
@@ -599,6 +602,31 @@ class PushSdkNotificationManager(
             }
         } else {
             return false
+        }
+    }
+
+    /**
+     * @return notification tag depend on API
+     */
+    private fun getNotificationTag(): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+            NOTIFICATION_TAG
+        } else {
+            SUMMARY_NOTIFICATION_TAG
+        }
+    }
+
+    /**
+     * @return notification tag depend on API
+     */
+    fun getNotificationId(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+            Random.nextInt(
+                DEFAULT_SUMMARY_NOTIFICATION_ID + 1,
+                Int.MAX_VALUE - 10
+            )
+        } else {
+            DEFAULT_SUMMARY_NOTIFICATION_ID
         }
     }
 }

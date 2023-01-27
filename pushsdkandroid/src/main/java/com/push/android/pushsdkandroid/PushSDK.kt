@@ -65,9 +65,19 @@ class PushSDK(
         const val NOTIFICATION_REPLY_INTENT_ACTION = "pushsdk.notification.reply.intent"
 
         /**
-         *
+         * Name of the extra inside the intent that broadcasts reply button data
          */
         const val NOTIFICATION_REPLY_DATA_EXTRA_NAME = "reply.data"
+
+        /**
+         * Name of the extra inside the intent that broadcasts notification tag
+         */
+        const val NOTIFICATION_TAG_EXTRA_NAME = "notification.tag"
+
+        /**
+         * Name of the extra inside the intent that broadcasts notification id
+         */
+        const val NOTIFICATION_ID_EXTRA_NAME = "notification.id"
 
     }
 
