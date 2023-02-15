@@ -110,7 +110,7 @@ dependencies {
     //noinspection GradleDependency
     implementation 'com.google.firebase:firebase-messaging:23.1.0'
 
-    implementation 'io.github.microutils:kotlin-logging:1.8.3'
+    implementation 'io.github.microutils:kotlin-logging:3.0.5'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
 
     implementation "org.jacoco:org.jacoco.agent:0.7.9:runtime"
