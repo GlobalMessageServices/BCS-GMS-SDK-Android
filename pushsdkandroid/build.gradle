@@ -108,7 +108,7 @@ dependencies {
     //noinspection GradleDependency
     //implementation 'com.google.firebase:firebase-iid:20.2.4'
     //noinspection GradleDependency
-    implementation 'com.google.firebase:firebase-messaging:23.1.0'
+    implementation 'com.google.firebase:firebase-messaging:23.1.1'
 
     implementation 'io.github.microutils:kotlin-logging:1.8.3'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4'
