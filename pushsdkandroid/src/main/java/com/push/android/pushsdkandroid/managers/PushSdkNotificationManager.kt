@@ -221,7 +221,7 @@ class PushSdkNotificationManager(
                         }
                     }
 
-                    if (message.is2Way) {
+                    if (message.is2Way && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
 
                         var replyLabel = "Reply"
                         var remoteInput: RemoteInput = RemoteInput.Builder(REMOTE_INPUT_KEY).run {
