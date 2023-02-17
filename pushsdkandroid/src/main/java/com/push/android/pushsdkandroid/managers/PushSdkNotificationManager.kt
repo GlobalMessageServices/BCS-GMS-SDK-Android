@@ -16,6 +16,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
+import androidx.core.app.RemoteInput
 import androidx.core.content.LocusIdCompat
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -100,6 +101,12 @@ class PushSdkNotificationManager(
          * shortcut id for bubble notification
          */
         const val NOTIFICATION_SHORTCUT_ID = "com.push.android.pushsdkandroid.shortcut_id"
+
+        /**
+         * key for remote input
+         */
+
+        const val REMOTE_INPUT_KEY = "pushsdk.remote_input_key"
     }
 
     /**
@@ -162,6 +169,7 @@ class PushSdkNotificationManager(
      */
     fun constructNotification(
         data: Map<String, String>,
+        notificationId: Int,
         notificationStyle: NotificationStyle,
         bubbleIntent: Intent? = null,
         bubbleSettings: BubbleSettings = BubbleSettings()
@@ -205,8 +213,55 @@ class PushSdkNotificationManager(
                                 browserIntent,
                                 PendingIntent.FLAG_IMMUTABLE
                             )
-                            addAction(android.R.drawable.btn_default_small, btnText, btnPendingIntent)
+                            addAction(
+                                android.R.drawable.btn_default_small,
+                                btnText,
+                                btnPendingIntent
+                            )
                         }
+                    }
+
+                    if (message.is2Way && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+
+                        var replyLabel = "Reply"
+                        var remoteInput: RemoteInput = RemoteInput.Builder(REMOTE_INPUT_KEY).run {
+                            setLabel(replyLabel)
+                            build()
+                        }
+                        // Build a PendingIntent for the reply action to trigger.
+                        var replyIntent = Intent()
+                        replyIntent.action = PushSDK.NOTIFICATION_REPLY_INTENT_ACTION
+                        replyIntent.putExtra(
+                            PushSDK.NOTIFICATION_REPLY_DATA_EXTRA_NAME,
+                            message.messageId
+                        )
+                        replyIntent.putExtra(
+                            PushSDK.NOTIFICATION_TAG_EXTRA_NAME,
+                            getNotificationTag()
+                        )
+                        replyIntent.putExtra(
+                            PushSDK.NOTIFICATION_ID_EXTRA_NAME,
+                            notificationId
+                        )
+
+                        var replyPendingIntent: PendingIntent =
+                            PendingIntent.getBroadcast(
+                                context,
+                                3,
+                                replyIntent,
+                                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                            )
+
+                        // Create the reply action and add the remote input.
+                        var replyAction: NotificationCompat.Action =
+                            NotificationCompat.Action.Builder(
+                                android.R.drawable.ic_input_add,
+                                replyLabel, replyPendingIntent
+                            )
+                                .addRemoteInput(remoteInput)
+                                .build()
+
+                        addAction(replyAction)
                     }
 
                     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {
@@ -254,7 +309,14 @@ class PushSdkNotificationManager(
                             }
                             NotificationStyle.BUBBLES -> {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                    if (!setBubble(this, message, data, bubbleIntent, bubbleSettings)) {
+                                    if (!setBubble(
+                                            this,
+                                            message,
+                                            data,
+                                            bubbleIntent,
+                                            bubbleSettings
+                                        )
+                                    ) {
                                         getBitmapFromURL(message.image.url)?.let {
                                             setLargeIcon(it)
                                         }
@@ -308,12 +370,12 @@ class PushSdkNotificationManager(
             val icon: IconCompat = if (bubbleSettings.isDefaultBubbleIconUsed) {
                 IconCompat.createWithResource(context, bubbleIconResourceId)
             } else {
-               val imageIcon = getBitmapFromURL(message.image.url)
-               if (imageIcon != null){
-                   IconCompat.createWithAdaptiveBitmap(imageIcon)
-               }else{
-                   IconCompat.createWithResource(context, bubbleIconResourceId)
-               }
+                val imageIcon = getBitmapFromURL(message.image.url)
+                if (imageIcon != null) {
+                    IconCompat.createWithAdaptiveBitmap(imageIcon)
+                } else {
+                    IconCompat.createWithResource(context, bubbleIconResourceId)
+                }
             }
 
 
@@ -395,17 +457,13 @@ class PushSdkNotificationManager(
      * @param notificationConstruct NotificationCompat.Builder object to send
      */
     fun sendNotification(
-        notificationConstruct: NotificationCompat.Builder
+        notificationConstruct: NotificationCompat.Builder,
+        notificationId: Int
     ): Boolean {
         try {
-            //Create notification channel if it doesn't exist (mandatory for Android O and above)
-            val notificationId = Random.nextInt(
-                DEFAULT_SUMMARY_NOTIFICATION_ID + 1,
-                Int.MAX_VALUE - 10
-            )
             val notification = notificationConstruct.build()
-
             NotificationManagerCompat.from(context.applicationContext).apply {
+                //Create notification channel if it doesn't exist (mandatory for Android O and above)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     val notificationChannel = NotificationChannel(
                         DEFAULT_NOTIFICATION_CHANNEL_ID,
@@ -420,22 +478,14 @@ class PushSdkNotificationManager(
                         notificationChannel
                     )
                 }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-                    //show regular notification
-                    notify(
-                        NOTIFICATION_TAG,
-                        notificationId,
-                        notification
-                    )
-                } else {
-                    //show summary notification
-                    notify(
-                        SUMMARY_NOTIFICATION_TAG,
-                        DEFAULT_SUMMARY_NOTIFICATION_ID,
-                        notification
-                    )
 
-                }
+                //show notification
+                notify(
+                    getNotificationTag(),
+                    notificationId,
+                    notification
+                )
+
             }
             return true
         } catch (e: Exception) {
@@ -547,6 +597,31 @@ class PushSdkNotificationManager(
             }
         } else {
             return false
+        }
+    }
+
+    /**
+     * @return notification tag depend on API
+     */
+    private fun getNotificationTag(): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+            NOTIFICATION_TAG
+        } else {
+            SUMMARY_NOTIFICATION_TAG
+        }
+    }
+
+    /**
+     * @return notification tag depend on API
+     */
+    fun getNotificationId(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+            Random.nextInt(
+                DEFAULT_SUMMARY_NOTIFICATION_ID + 1,
+                Int.MAX_VALUE - 10
+            )
+        } else {
+            DEFAULT_SUMMARY_NOTIFICATION_ID
         }
     }
 }

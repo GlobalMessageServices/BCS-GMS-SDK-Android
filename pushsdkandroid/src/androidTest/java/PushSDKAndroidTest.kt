@@ -23,10 +23,13 @@ class PushSDKAndroidTest {
     private lateinit var notificationManager: PushSdkNotificationManager
     private lateinit var message: String
     private lateinit var message2: String
+    private lateinit var message3: String
     private lateinit var remoteMessage: RemoteMessage
     private lateinit var remoteMessage2: RemoteMessage
+    private lateinit var remoteMessage3: RemoteMessage
     private val map: HashMap<String, String> = HashMap()
     private val map2: HashMap<String, String> = HashMap()
+    private val map3: HashMap<String, String> = HashMap()
     private lateinit var sharedPreferencesHandler: SharedPreferencesHandler
 
     @Before
@@ -46,6 +49,11 @@ class PushSDKAndroidTest {
         map2["source"] = "Messaging HUB"
         map2["message"] = message2
         remoteMessage2 = RemoteMessage.Builder("internal").setData(map2).build()
+        message3 =
+            "{\"button\":{},\"image\":{\"url\":\"https://test_image.jpg\"},\"partner\":\"push\",\"phone\":\"0123456789\",\"messageId\":\"6c000000-4b8f-11ed-972a-0000006010000\",\"time\":\"2022-06-22T07:34:53.738326+00\",\"body\":\"Test Message Android\",\"title\":\"Test title Android\", \"is2Way\":true}"
+        map3["source"] = "Messaging HUB"
+        map3["message"] = message3
+        remoteMessage3 = RemoteMessage.Builder("internal").setData(map3).build()
     }
 
 
@@ -73,28 +81,34 @@ class PushSDKAndroidTest {
     @Throws(Exception::class)
     fun testConstructNotification() {
 
+        val notificationId = notificationManager.getNotificationId()
+        val notificationIdBubbles = notificationManager.getNotificationId()
 
         //Construct without style
         val construct1 = notificationManager.constructNotification(
             remoteMessage.data,
+            notificationManager.getNotificationId(),
             PushSdkNotificationManager.NotificationStyle.NO_STYLE
         )
 
         //Construct with big text style
         val construct2 = notificationManager.constructNotification(
             remoteMessage.data,
+            notificationId,
             PushSdkNotificationManager.NotificationStyle.BIG_TEXT
         )
 
         //Construct with big picture style
         val construct3 = notificationManager.constructNotification(
             remoteMessage.data,
+            notificationManager.getNotificationId(),
             PushSdkNotificationManager.NotificationStyle.BIG_PICTURE
         )
 
         //Construct with big text style (with button)
         val construct4 = notificationManager.constructNotification(
             remoteMessage2.data,
+            notificationManager.getNotificationId(),
             PushSdkNotificationManager.NotificationStyle.BIG_TEXT
         )
 
@@ -102,9 +116,16 @@ class PushSDKAndroidTest {
         //Construct with bubble style
         val constructBubble = notificationManager.constructNotification(
             remoteMessage2.data,
+            notificationIdBubbles,
             PushSdkNotificationManager.NotificationStyle.BUBBLES,
             bubbleIntent = Intent(),
             bubbleSettings = BubbleSettings()
+        )
+
+        val construct2Way = notificationManager.constructNotification(
+            remoteMessage3.data,
+            notificationManager.getNotificationId(),
+            PushSdkNotificationManager.NotificationStyle.BIG_TEXT
         )
 
         println(construct1)
@@ -112,10 +133,11 @@ class PushSDKAndroidTest {
         println(construct3)
         println(construct4)
         println(constructBubble)
+        println(construct2Way)
 
-        val isSent = construct2?.let { notificationManager.sendNotification(it) }
+        val isSent = construct2?.let { notificationManager.sendNotification(it, notificationId) }
 
-        val isSentBubble = constructBubble?.let { notificationManager.sendNotification(it) }
+        val isSentBubble = constructBubble?.let { notificationManager.sendNotification(it, notificationIdBubbles) }
 
         println(isSent)
         println(isSentBubble)

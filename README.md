@@ -111,12 +111,12 @@ allprojects {
     }
 }
 ```
-Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.5
+Add SDK dependency to your module (app-level) build.gradle. The latest version 1.1.6
 ```Gradle
 dependencies {
     ...
     //or use a newer version if available
-    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.5'
+    'com.github.GlobalMessageServices:Hyber-GMS-SDK-Android:1.1.6'
 }
 ```
 To use http protocol instead of https, add android:usesCleartextTraffic="true" to your application tag inside android manifest
@@ -219,10 +219,10 @@ class MyPushKFirebaseService : PushKFirebaseService(
     /**
      * Prepares NotificationCompat.Builder object for showing
      */
-    override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
-        return super.prepareNotification(data)
+    override fun prepareNotification(data: Map<String, String>, notificationId: Int): NotificationCompat.Builder? {
+        return super.prepareNotification(data, notificationId)
         //can customize NotificationCompat.Builder object here, e.g.:
-//        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
+//        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, notificationId, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
 //        notificationConstruct?.apply {
 //            setContentText("some new text")
 //        }
@@ -407,10 +407,10 @@ class MyPushKFirebaseService : PushKFirebaseService(
     /**
      * Prepares NotificationCompat.Builder object for showing
      */
-    override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
-        return super.prepareNotification(data)
+    override fun prepareNotification(data: Map<String, String>, notificationId: Int): NotificationCompat.Builder? {
+        return super.prepareNotification(data, notificationId)
         //can customize NotificationCompat.Builder object here, e.g.:
-//        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
+//        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, notificationId, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
 //        notificationConstruct?.apply {
 //            setContentText("some new text")
 //        }
@@ -508,10 +508,10 @@ It can be achieved by overriding the `prepareNotification()` method.
 * Specifying one of the styles, provided by the SDK:
 
 ```kotlin
-override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
-    //return super.prepareNotification(data)
+override fun prepareNotification(data: Map<String, String>, notificationId: Int): NotificationCompat.Builder? {
+    //return super.prepareNotification(data, notificationId)
     //can customize NotificationCompat.Builder object here, e.g.:
-    val notificationConstruct = pushSdkNotificationManager.constructNotification(data, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
+    val notificationConstruct = pushSdkNotificationManager.constructNotification(data, notificationId, PushSdkNotificationManager.NotificationStyle.BIG_TEXT)
    
     return notificationConstruct
 }
@@ -551,10 +551,10 @@ enum class NotificationStyle {
 * Manually changing your style to the `NotificationCompat.Builder` object:
 
 ```kotlin
-override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
-        //return super.prepareNotification(data)
+override fun prepareNotification(data: Map<String, String>, notificationId: Int): NotificationCompat.Builder? {
+        //return super.prepareNotification(data, notificationId)
         //can customize NotificationCompat.Builder object here, e.g.:
-        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, PushSdkNotificationManager.NotificationStyle.NO_STYLE)
+        val notificationConstruct = pushSdkNotificationManager.constructNotification(data, notificationId, PushSdkNotificationManager.NotificationStyle.NO_STYLE)
         notificationConstruct?.apply {
             setContentTitle("some new text")
             setContentText("some new text")
@@ -564,6 +564,41 @@ override fun prepareNotification(data: Map<String, String>): NotificationCompat.
     }
 ```
 
+### Using reply button in notification
+The reply button empowers end users to make a response to the push message directly from notification. <br>
+It only appears if push message is 2way. <br>
+You can catch user's response and process it by using the followed code in BroadcastReceiver:
+```Kotlin
+private val mPlugInReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val remoteInput = RemoteInput.getResultsFromIntent(intent)
+        when (intent.action) {
+            
+
+            PushSDK.NOTIFICATION_REPLY_INTENT_ACTION -> {
+                intent.extras?.let {
+                    //get extra data
+                    val data = it.getString(PushSDK.NOTIFICATION_REPLY_DATA_EXTRA_NAME)
+                    val notificationTag = it.getString(PushSDK.NOTIFICATION_TAG_EXTRA_NAME)
+                    val notificationId = it.getInt(PushSDK.NOTIFICATION_ID_EXTRA_NAME)
+                    
+                    if (remoteInput != null) {
+                        //get reply text
+                        val reply = remoteInput.getCharSequence(
+                            "pushsdk.remote_input_key"
+                        ).toString()
+                        println("reply is: $reply")
+                        
+                        // cancel notification to update reply UI
+                        NotificationManagerCompat.from(context).cancel(tag,id)
+                    }
+                }
+            }
+           
+        }
+    }
+}
+```
 
 ***
 # Bubbles
