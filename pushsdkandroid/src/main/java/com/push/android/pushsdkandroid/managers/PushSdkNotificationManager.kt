@@ -461,11 +461,6 @@ class PushSdkNotificationManager(
         notificationId: Int
     ): Boolean {
         try {
-
-            /*val notificationId = Random.nextInt(
-                DEFAULT_SUMMARY_NOTIFICATION_ID + 1,
-                Int.MAX_VALUE - 10
-            )*/
             val notification = notificationConstruct.build()
             NotificationManagerCompat.from(context.applicationContext).apply {
                 //Create notification channel if it doesn't exist (mandatory for Android O and above)
