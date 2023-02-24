@@ -22,7 +22,7 @@ buildscript {
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:${dokka_version}")
 
         //noinspection GradleDependency
-        classpath 'com.google.gms:google-services:3.1.1'
+        classpath 'com.google.gms:google-services:4.3.15'
         classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
 
         //test coverage
