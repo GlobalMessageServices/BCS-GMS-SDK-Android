@@ -5,7 +5,7 @@
 buildscript {
     ext.kotlin_version = '1.7.22'
     ext.gradleVersion = '7.2.0'
-    ext.dokka_version = "1.7.20"
+    ext.dokka_version = "1.8.10"
     ext.jacocoVersion = '0.8.8'
     repositories {
         google()
