@@ -1,5 +1,6 @@
 package com.push.android.pushsdkandroid.managers
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -13,10 +14,7 @@ import android.os.Build
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.app.Person
-import androidx.core.app.RemoteInput
+import androidx.core.app.*
 import androidx.core.content.LocusIdCompat
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -456,6 +454,7 @@ class PushSdkNotificationManager(
      *
      * @param notificationConstruct NotificationCompat.Builder object to send
      */
+    @SuppressLint("MissingPermission")
     fun sendNotification(
         notificationConstruct: NotificationCompat.Builder,
         notificationId: Int
