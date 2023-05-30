@@ -42,7 +42,7 @@ sonarqube {
         property "sonar.projectKey", "GlobalMessageServices_BCS-GMS-SDK-Android"
         property "sonar.organization", "globalmessageservices"
         property "sonar.host.url", "https://sonarcloud.io"
-        property("sonar.coverage.jacoco.xmlReportPaths", "${project.projectDir}/pushsdkandroid/build/reports/coverage/androidTest/debug/connected/report.xml")
+        property("sonar.coverage.jacoco.xmlReportPaths", "${project.projectDir}/pushsdkandroid/build/reports/coverage/androidTest/debug/report.xml")
     }
 }
 
