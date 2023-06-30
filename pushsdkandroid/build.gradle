@@ -113,7 +113,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-messaging:23.1.2'
 
     implementation 'io.github.microutils:kotlin-logging:3.0.5'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.2'
 
     implementation "org.jacoco:org.jacoco.agent:0.8.8:runtime"
 
