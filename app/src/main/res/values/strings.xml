@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">GMSPushApp</string>
+
+    <string name="title_activity_bubble">BubbleActivity</string>
+    <string name="send">Send</string>
+    <string name="type_message">Type message...</string>
+</resources>

@@ -1,0 +1,49 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+
+
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.4.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10'
+
+        // Add this line
+        classpath 'com.google.gms:google-services:4.3.13'
+
+
+
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+/*plugins {
+    id 'com.android.application' version '7.1.2'
+    id 'com.android.library' version '7.1.2'
+    id 'org.jetbrains.kotlin.android' version '1.6.10'
+    id 'com.google.gms.google-services' version'4.3.10' apply false
+}*/
+
+allprojects {
+
+    repositories {
+        // Check that you have the following line (if not, add it):
+        google()  // Google's Maven repository
+        jcenter()
+        mavenCentral()
+        maven {
+            url 'https://jitpack.io'
+        }
+
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

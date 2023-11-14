@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:background="#599075"
+    >
+
+    <TextView
+        android:id="@+id/textOut"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:layout_marginStart="5dp"
+        android:layout_marginEnd="5dp"
+        app:layout_constraintBottom_toTopOf="@+id/data_btn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.061" />
+
+    <Button
+        android:id="@+id/reg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="3dp"
+        android:text="reg"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/update"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="30dp"
+        android:layout_marginBottom="3dp"
+        android:text="update"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/reg" />
+
+    <Button
+        android:id="@+id/getAll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="30dp"
+        android:layout_marginBottom="3dp"
+        android:text="get all"
+        app:layout_constraintBottom_toBottomOf="parent"
+
+        app:layout_constraintStart_toEndOf="@+id/update" />
+
+    <Button
+        android:id="@+id/history"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="30dp"
+        android:layout_marginBottom="3dp"
+        android:text="history"
+        app:layout_constraintBottom_toTopOf="@+id/update"
+        app:layout_constraintStart_toEndOf="@+id/queue" />
+
+    <Button
+        android:id="@+id/queue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="3dp"
+        android:text="queue"
+        app:layout_constraintBottom_toTopOf="@+id/reg"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/clearText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="3dp"
+        android:text="clear text"
+        app:layout_constraintBottom_toTopOf="@+id/clearAll"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/dr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="30dp"
+        android:layout_marginBottom="3dp"
+        android:text="dr"
+        app:layout_constraintBottom_toTopOf="@+id/getAll"
+
+        app:layout_constraintStart_toEndOf="@+id/history" />
+
+    <Button
+        android:id="@+id/clearCurrent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="30dp"
+        android:layout_marginBottom="3dp"
+        android:text="clear current"
+        app:layout_constraintBottom_toTopOf="@+id/history"
+        app:layout_constraintStart_toEndOf="@+id/clearAll" />
+
+    <Button
+        android:id="@+id/clearAll"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="3dp"
+        android:layout_marginStart="16dp"
+        android:text="clear all"
+        app:layout_constraintBottom_toTopOf="@+id/queue"
+
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/callBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="30dp"
+        android:layout_marginBottom="3dp"
+        android:text="call back"
+        app:layout_constraintBottom_toTopOf="@+id/clearCurrent"
+        app:layout_constraintStart_toEndOf="@+id/clearText" />
+
+    <Button
+        android:id="@+id/data_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="3dp"
+        android:text="show data"
+        app:layout_constraintBottom_toTopOf="@+id/clearText"
+        app:layout_constraintStart_toStartOf="parent" />
+    <Button
+        android:id="@+id/viber_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:text="viber"
+        app:layout_constraintStart_toEndOf="@+id/data_btn"
+        app:layout_constraintBottom_toTopOf="@+id/callBack"
+        tools:layout_editor_absoluteY="479dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
