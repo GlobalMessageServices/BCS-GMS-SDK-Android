@@ -10,6 +10,7 @@ import com.push.android.pushsdkandroid.managers.PushSdkNotificationManager
 import com.push.android.pushsdkandroid.settings.BubbleSettings
 import com.push.android.pushsdkandroid.utils.Info
 import junit.framework.TestCase
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -136,11 +137,22 @@ class PushSDKAndroidTest {
         println(construct2Way)
 
         val isSent = construct2?.let { notificationManager.sendNotification(it, notificationId) }
+        val isSent2wWay =
+            construct2Way?.let { notificationManager.sendNotification(it, notificationId) }
 
-        val isSentBubble = constructBubble?.let { notificationManager.sendNotification(it, notificationIdBubbles) }
+        val isSentBubble =
+            constructBubble?.let { notificationManager.sendNotification(it, notificationIdBubbles) }
+
+
+
 
         println(isSent)
+        println(isSent2wWay)
         println(isSentBubble)
+
+        assertEquals(true, isSent)
+        assertEquals(true, isSent2wWay)
+
     }
 
     @Test
