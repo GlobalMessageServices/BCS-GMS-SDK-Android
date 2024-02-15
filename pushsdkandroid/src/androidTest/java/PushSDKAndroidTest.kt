@@ -119,6 +119,7 @@ class PushSDKAndroidTest {
             remoteMessage2.data,
             notificationIdBubbles,
             PushSdkNotificationManager.NotificationStyle.BUBBLES,
+            null,
             bubbleIntent = Intent(),
             bubbleSettings = BubbleSettings()
         )
@@ -126,7 +127,8 @@ class PushSDKAndroidTest {
         val construct2Way = notificationManager.constructNotification(
             remoteMessage3.data,
             notificationManager.getNotificationId(),
-            PushSdkNotificationManager.NotificationStyle.BIG_TEXT
+            PushSdkNotificationManager.NotificationStyle.BIG_TEXT,
+            Intent()
         )
 
         println(construct1)

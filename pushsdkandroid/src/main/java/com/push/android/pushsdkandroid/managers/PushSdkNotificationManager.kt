@@ -169,6 +169,7 @@ class PushSdkNotificationManager(
         data: Map<String, String>,
         notificationId: Int,
         notificationStyle: NotificationStyle,
+        replyIntent: Intent? = null,
         bubbleIntent: Intent? = null,
         bubbleSettings: BubbleSettings = BubbleSettings()
     ): NotificationCompat.Builder? {
@@ -219,15 +220,14 @@ class PushSdkNotificationManager(
                         }
                     }
 
-                    if (message.is2Way && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-
+                    if (message.is2Way && replyIntent != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         var replyLabel = "Reply"
                         var remoteInput: RemoteInput = RemoteInput.Builder(REMOTE_INPUT_KEY).run {
                             setLabel(replyLabel)
                             build()
                         }
                         // Build a PendingIntent for the reply action to trigger.
-                        var replyIntent = Intent()
+                        //var replyIntent = Intent()
                         replyIntent.action = PushSDK.NOTIFICATION_REPLY_INTENT_ACTION
                         replyIntent.putExtra(
                             PushSDK.NOTIFICATION_REPLY_DATA_EXTRA_NAME,
@@ -290,6 +290,7 @@ class PushSdkNotificationManager(
                                     setLargeIcon(it)
                                 }
                             }
+
                             NotificationStyle.BIG_TEXT -> {
                                 setStyle(NotificationCompat.BigTextStyle())
                                 //image size is recommended to be <1mb for notifications
@@ -297,6 +298,7 @@ class PushSdkNotificationManager(
                                     setLargeIcon(it)
                                 }
                             }
+
                             NotificationStyle.BIG_PICTURE -> {
                                 //image size is recommended to be <1mb for notifications
                                 getBitmapFromURL(message.image.url)?.let {
@@ -305,6 +307,7 @@ class PushSdkNotificationManager(
                                     )
                                 }
                             }
+
                             NotificationStyle.BUBBLES -> {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                                     if (!setBubble(
@@ -514,6 +517,7 @@ class PushSdkNotificationManager(
                 in 0 until MAX_NOTIFICATIONS -> {
                     hasSpaceForNotification = true
                 }
+
                 else -> {
                     if (cancelOldest) {
                         Collections.sort(activeNotifications, compareNotificationByPostTime)
