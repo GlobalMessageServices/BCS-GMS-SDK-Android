@@ -199,68 +199,11 @@ class PushSdkNotificationManager(
                     setSmallIcon(notificationIconResourceId)
                     setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
 
-                    if (message.button != null) {
-                        val btnText = message.button.text
-                        val btnURL = message.button.url
-                        if (btnText != null && btnText.isNotEmpty() && btnURL != null && btnURL.isNotEmpty()) {
-                            //an intent for action button
-                            val browserIntent =
-                                Intent(Intent.ACTION_VIEW, Uri.parse(btnURL))
-                            val btnPendingIntent = PendingIntent.getActivity(
-                                context,
-                                1,
-                                browserIntent,
-                                PendingIntent.FLAG_IMMUTABLE
-                            )
-                            addAction(
-                                android.R.drawable.btn_default_small,
-                                btnText,
-                                btnPendingIntent
-                            )
-                        }
-                    }
+                    //set click button
+                    setActionButton(this, message)
 
-                    if (message.is2Way && replyIntent != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        var replyLabel = "Reply"
-                        var remoteInput: RemoteInput = RemoteInput.Builder(REMOTE_INPUT_KEY).run {
-                            setLabel(replyLabel)
-                            build()
-                        }
-                        // Build a PendingIntent for the reply action to trigger.
-                        //var replyIntent = Intent()
-                        replyIntent.action = PushSDK.NOTIFICATION_REPLY_INTENT_ACTION
-                        replyIntent.putExtra(
-                            PushSDK.NOTIFICATION_REPLY_DATA_EXTRA_NAME,
-                            message.messageId
-                        )
-                        replyIntent.putExtra(
-                            PushSDK.NOTIFICATION_TAG_EXTRA_NAME,
-                            getNotificationTag()
-                        )
-                        replyIntent.putExtra(
-                            PushSDK.NOTIFICATION_ID_EXTRA_NAME,
-                            notificationId
-                        )
-
-                        var replyPendingIntent: PendingIntent =
-                            PendingIntent.getBroadcast(
-                                context,
-                                3,
-                                replyIntent,
-                                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-                            )
-
-                        // Create the reply action and add the remote input.
-                        var replyAction: NotificationCompat.Action =
-                            NotificationCompat.Action.Builder(
-                                android.R.drawable.ic_input_add,
-                                replyLabel, replyPendingIntent
-                            )
-                                .addRemoteInput(remoteInput)
-                                .build()
-
-                        addAction(replyAction)
-                    }
+                    //set reply button
+                    setReplyButton(this, replyIntent, message, notificationId)
 
                     if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N) {
                         context.packageManager.getLaunchIntentForPackage(context.applicationInfo.packageName)
@@ -339,6 +282,78 @@ class PushSdkNotificationManager(
             e.printStackTrace()
             PushSDKLogger.debug(context, "data: $data")
             return null
+        }
+    }
+
+    private fun setReplyButton(
+        builder: NotificationCompat.Builder,
+        replyIntent: Intent?,
+        message: PushDataMessageModel,
+        notificationId: Int
+    ) {
+        if (message.is2Way && replyIntent != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            var replyLabel = "Reply"
+            var remoteInput: RemoteInput = RemoteInput.Builder(REMOTE_INPUT_KEY).run {
+                setLabel(replyLabel)
+                build()
+            }
+            // Build a PendingIntent for the reply action to trigger.
+            //var replyIntent = Intent()
+            replyIntent.action = PushSDK.NOTIFICATION_REPLY_INTENT_ACTION
+            replyIntent.putExtra(
+                PushSDK.NOTIFICATION_REPLY_DATA_EXTRA_NAME,
+                message.messageId
+            )
+            replyIntent.putExtra(
+                PushSDK.NOTIFICATION_TAG_EXTRA_NAME,
+                getNotificationTag()
+            )
+            replyIntent.putExtra(
+                PushSDK.NOTIFICATION_ID_EXTRA_NAME,
+                notificationId
+            )
+
+            var replyPendingIntent: PendingIntent =
+                PendingIntent.getBroadcast(
+                    context,
+                    3,
+                    replyIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                )
+
+            // Create reply action and add the remote input.
+            var replyAction: NotificationCompat.Action =
+                NotificationCompat.Action.Builder(
+                    android.R.drawable.ic_input_add,
+                    replyLabel, replyPendingIntent
+                )
+                    .addRemoteInput(remoteInput)
+                    .build()
+
+            builder.addAction(replyAction)
+        }
+    }
+
+    private fun setActionButton(builder: NotificationCompat.Builder, message: PushDataMessageModel) {
+        if (message.button != null) {
+            val btnText = message.button.text
+            val btnURL = message.button.url
+            if (btnText != null && btnText.isNotEmpty() && btnURL != null && btnURL.isNotEmpty()) {
+                //an intent for action button
+                val browserIntent =
+                    Intent(Intent.ACTION_VIEW, Uri.parse(btnURL))
+                val btnPendingIntent = PendingIntent.getActivity(
+                    context,
+                    1,
+                    browserIntent,
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(
+                    android.R.drawable.btn_default_small,
+                    btnText,
+                    btnPendingIntent
+                )
+            }
         }
     }
 
