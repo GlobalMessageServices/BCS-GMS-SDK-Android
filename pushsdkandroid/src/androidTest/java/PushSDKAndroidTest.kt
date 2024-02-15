@@ -128,7 +128,7 @@ class PushSDKAndroidTest {
             remoteMessage3.data,
             notificationManager.getNotificationId(),
             PushSdkNotificationManager.NotificationStyle.BIG_TEXT,
-            Intent()
+            Intent(appContext, PushSDKAndroidTest::class.java)
         )
 
         println(construct1)
