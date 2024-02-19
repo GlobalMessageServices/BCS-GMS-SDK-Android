@@ -659,9 +659,8 @@ override fun prepareNotification(data: Map<String, String>, notificationId: Int)
         data,
         notificationId,
         PushSdkNotificationManager.NotificationStyle.BUBBLES,
-        null,
         bubbleIntent = Intent(this, BubbleActivity::class.java)
-  
+    )
 }
 ```
 
@@ -855,7 +854,6 @@ override fun prepareNotification(data: Map<String, String>, notificationId: Int)
         data,
         notificationId,
         PushSdkNotificationManager.NotificationStyle.BUBBLES,
-        null,
         bubbleIntent = Intent(this, BubbleActivity::class.java),
         bubbleSettings = BubbleSettings(shortLabel = "My custom label")
     )
