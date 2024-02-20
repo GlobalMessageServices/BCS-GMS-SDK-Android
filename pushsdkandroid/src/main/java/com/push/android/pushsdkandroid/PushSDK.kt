@@ -10,7 +10,6 @@ import com.google.gson.JsonObject
 import com.push.android.pushsdkandroid.core.APIHandler
 import com.push.android.pushsdkandroid.core.PushSdkSavedDataProvider
 import com.push.android.pushsdkandroid.models.*
-import com.push.android.pushsdkandroid.models.PushServerApiResponse
 import com.push.android.pushsdkandroid.utils.Info
 import com.push.android.pushsdkandroid.utils.PushSDKLogger
 import kotlin.properties.Delegates
@@ -27,7 +26,7 @@ class PushSDK(
     context: Context,
     baseApiUrl: String,
     log_level: LogLevels = LogLevels.PUSHSDK_LOG_LEVEL_ERROR,
-    enableAutoDeliveryReport : Boolean = true
+    enableAutoDeliveryReport: Boolean = true
 ) {
 
     /**
@@ -319,6 +318,7 @@ class PushSDK(
                                 createdAt = createdAt
                             )
                         }
+
                         401 -> {
                             response = PushServerAnswerRegister(
                                 code = 401,
@@ -331,6 +331,7 @@ class PushSDK(
                                 createdAt = "unknown"
                             )
                         }
+
                         400 -> {
                             response = PushServerAnswerRegister(
                                 code = 400,
@@ -343,6 +344,7 @@ class PushSDK(
                                 createdAt = "unknown"
                             )
                         }
+
                         500 -> {
                             response = PushServerAnswerRegister(
                                 code = 500,
@@ -355,6 +357,7 @@ class PushSDK(
                                 createdAt = "unknown"
                             )
                         }
+
                         else -> {
                             response = PushServerAnswerRegister(
                                 code = 710,
@@ -414,6 +417,7 @@ class PushSDK(
                             "{\"device\":\"$deviceId\"}"
                         )
                     }
+
                     401 -> {
                         clearData()
                         response = PushServerAnswerGeneral(
@@ -423,6 +427,7 @@ class PushSDK(
                             requestResponse.body
                         )
                     }
+
                     else -> {
                         response = PushServerAnswerGeneral(
                             requestResponse.code,
@@ -497,6 +502,7 @@ class PushSDK(
                                 "{\"devices\":\"$deviceIds\"}"
                             )
                         }
+
                         401 -> {
                             clearData()
                             response = PushServerAnswerGeneral(
@@ -506,6 +512,7 @@ class PushSDK(
                                 revokeRequestResponse.body
                             )
                         }
+
                         else -> {
                             response = PushServerAnswerGeneral(
                                 revokeRequestResponse.code,
@@ -580,6 +587,7 @@ class PushSDK(
                             requestResponse.body
                         )
                     }
+
                     401 -> {
                         clearData()
                         response = PushServerAnswerGeneral(
@@ -589,6 +597,7 @@ class PushSDK(
                             requestResponse.body
                         )
                     }
+
                     else -> {
                         response = PushServerAnswerGeneral(
                             requestResponse.code,
@@ -650,6 +659,7 @@ class PushSDK(
                             requestResponse.body
                         )
                     }
+
                     401 -> {
                         clearData()
                         response = PushServerAnswerGeneral(
@@ -659,6 +669,7 @@ class PushSDK(
                             requestResponse.body
                         )
                     }
+
                     else -> {
                         response = PushServerAnswerGeneral(
                             requestResponse.code,
@@ -723,6 +734,7 @@ class PushSDK(
                             requestResponse.body
                         )
                     }
+
                     401 -> {
                         clearData()
                         response = PushServerAnswerGeneral(
@@ -732,6 +744,7 @@ class PushSDK(
                             requestResponse.body
                         )
                     }
+
                     else -> {
                         response = PushServerAnswerGeneral(
                             requestResponse.code,
@@ -803,6 +816,7 @@ class PushSDK(
                             requestResponse.body
                         )
                     }
+
                     401 -> {
                         clearData()
                         response = PushServerAnswerGeneral(
@@ -812,6 +826,7 @@ class PushSDK(
                             requestResponse.body
                         )
                     }
+
                     else -> {
                         response = PushServerAnswerGeneral(
                             requestResponse.code,
@@ -881,6 +896,7 @@ class PushSDK(
                                 requestResponse.body
                             )
                         }
+
                         401 -> {
                             clearData()
                             response = PushServerAnswerGeneral(
@@ -890,6 +906,7 @@ class PushSDK(
                                 requestResponse.body
                             )
                         }
+
                         else -> {
                             response = PushServerAnswerGeneral(
                                 requestResponse.code,
@@ -965,6 +982,7 @@ class PushSDK(
                                 requestResponse.body
                             )
                         }
+
                         401 -> {
                             clearData()
                             response = PushServerAnswerGeneral(
@@ -974,6 +992,7 @@ class PushSDK(
                                 requestResponse.body
                             )
                         }
+
                         else -> {
                             response = PushServerAnswerGeneral(
                                 requestResponse.code,

@@ -566,15 +566,14 @@ override fun prepareNotification(data: Map<String, String>, notificationId: Int)
 
 ### Using reply button in notification
 The reply button empowers end users to make a response to the push message directly from notification. <br>
-It only appears if push message is 2way. <br>
-You can catch user's response and process it by using the followed code in BroadcastReceiver:
+To display reply button in notification and process the user's response you should create class that extends BroadcastReceiver and override function `onReceive(context: Context?, intent: Intent?)`: <br>
 ```Kotlin
-private val mPlugInReceiver = object : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
+class MyBroadcastReceiver : BroadcastReceiver() {
+    
+    override fun onReceive(context: Context?, intent: Intent?) {
         val remoteInput = RemoteInput.getResultsFromIntent(intent)
         when (intent.action) {
             
-
             PushSDK.NOTIFICATION_REPLY_INTENT_ACTION -> {
                 intent.extras?.let {
                     //get extra data
@@ -585,11 +584,11 @@ private val mPlugInReceiver = object : BroadcastReceiver() {
                     if (remoteInput != null) {
                         //get reply text
                         val reply = remoteInput.getCharSequence(
-                            "pushsdk.remote_input_key"
+                            PushSdkNotificationManager.REMOTE_INPUT_KEY
                         ).toString()
                         println("reply is: $reply")
                         
-                        // cancel notification to update reply UI
+                        // cancel notification to update notification UI
                         NotificationManagerCompat.from(context).cancel(tag,id)
                     }
                 }
@@ -599,6 +598,39 @@ private val mPlugInReceiver = object : BroadcastReceiver() {
     }
 }
 ```
+Register MyBroadcastReceiver in AndroidManifest.xml: <br>
+```Gradle
+<application
+...>
+    ...
+
+    <receiver
+        android:name=".handler.MyBroadcastReceiver"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="pushsdk.notification.reply.intent" />
+        </intent-filter>
+    </receiver>
+</application>
+```
+Create Intent with MyBroadcastReceiver and manually change function `prepareNotification(data: Map<String, String>, notificationId: Int): NotificationCompat.Builder?` in `MyPushKFirebaseService`: <br>
+```Kotlin
+override fun prepareNotification(
+    data: Map<String, String>,
+    notificationId: Int
+): NotificationCompat.Builder? {
+    val replyIntent = Intent(this, MyBroadcastReceiver::class.java)
+    
+    return pushSdkNotificationManager.constructNotification(
+        data,
+        notificationId,
+        PushSdkNotificationManager.NotificationStyle.BIG_TEXT,
+        replyIntent
+    )
+}
+```
+`Reply button only appears in notifications if push message is 2way and you pass replyIntent into `constructNotification()` function.` <br>
+
 
 ***
 # Bubbles
@@ -622,12 +654,13 @@ private val mPlugInReceiver = object : BroadcastReceiver() {
 * Manually chang the `NotificationCompat.Builder` object style to NotificationStyle.BUBBLES and pass Intent object with BubbleActivity to the called function constructNotification <br>
   It can be achieved by overriding the `prepareNotification()` method
 ```Kotlin
-override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
+override fun prepareNotification(data: Map<String, String>, notificationId: Int): NotificationCompat.Builder? {
     return pushSdkNotificationManager.constructNotification(
         data,
+        notificationId,
         PushSdkNotificationManager.NotificationStyle.BUBBLES,
         bubbleIntent = Intent(this, BubbleActivity::class.java)
-  
+    )
 }
 ```
 
@@ -816,9 +849,10 @@ class MessageAdapter(private val messages: MutableList<ChatMessage>) :
 ### You can change Bubble settings by passing the `BubbleSettings` object to the called function constructNotification
 
 ```Kotlin
-override fun prepareNotification(data: Map<String, String>): NotificationCompat.Builder? {
+override fun prepareNotification(data: Map<String, String>, notificationId: Int): NotificationCompat.Builder? {
     return pushSdkNotificationManager.constructNotification(
         data,
+        notificationId,
         PushSdkNotificationManager.NotificationStyle.BUBBLES,
         bubbleIntent = Intent(this, BubbleActivity::class.java),
         bubbleSettings = BubbleSettings(shortLabel = "My custom label")
