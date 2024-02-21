@@ -94,7 +94,7 @@ dependencies {
 
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation project(path: ':pushsdkandroid')
     testImplementation 'org.robolectric:robolectric:4.10.3'
 
