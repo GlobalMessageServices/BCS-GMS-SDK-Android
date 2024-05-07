@@ -87,14 +87,14 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     //implementation 'androidx.appcompat:appcompat:1.3.0'
-    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.lifecycle:lifecycle-process:2.7.0'
     implementation 'androidx.test:monitor:1.6.1'
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 
 
     testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation project(path: ':pushsdkandroid')
     testImplementation 'org.robolectric:robolectric:4.10.3'
 
@@ -115,12 +115,12 @@ dependencies {
     implementation 'io.github.microutils:kotlin-logging:3.0.5'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
 
-    implementation "org.jacoco:org.jacoco.agent:0.8.8:runtime"
+    implementation "org.jacoco:org.jacoco.agent:0.8.11:runtime"
 
     implementation 'com.google.code.gson:gson:2.10.1'
 
     //WorkManager Version 2.7.0 is required for apps targeting Android 12 (S) or higher
-    implementation 'androidx.work:work-runtime-ktx:2.8.1'
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
 }
 
 //get HEAD commit hash
