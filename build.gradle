@@ -3,10 +3,10 @@
 
 
 buildscript {
-    ext.kotlin_version = '1.9.10'
-    ext.gradleVersion = '8.2.0'
+    ext.kotlin_version = '1.9.22'
+    ext.gradleVersion = '8.4.0'
     ext.dokka_version = "1.9.10"
-    ext.jacocoVersion = '0.8.10'
+    ext.jacocoVersion = '0.8.12'
     repositories {
         google()
         //jcenter()
@@ -35,7 +35,7 @@ buildscript {
 }
 
 plugins{
-    id "org.sonarqube" version "4.3.1.3277"
+    id "org.sonarqube" version "5.0.0.4638"
 }
 
 sonarqube {
