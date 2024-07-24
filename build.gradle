@@ -23,7 +23,7 @@ buildscript {
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:${dokka_version}")
 
         //noinspection GradleDependency
-        classpath 'com.google.gms:google-services:4.4.0'
+        classpath 'com.google.gms:google-services:4.4.2'
         classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
 
         //test coverage
@@ -35,7 +35,7 @@ buildscript {
 }
 
 plugins{
-    id "org.sonarqube" version "5.0.0.4638"
+    id "org.sonarqube" version "5.1.0.4882"
 }
 
 sonarqube {
