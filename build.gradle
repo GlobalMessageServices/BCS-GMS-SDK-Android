@@ -3,13 +3,14 @@
 
 
 buildscript {
-    ext.kotlin_version = '1.9.10'
-    ext.gradleVersion = '7.4.2'
-    ext.dokka_version = "1.8.20"
-    ext.jacocoVersion = '0.8.10'
+    ext.kotlin_version = '1.9.22'
+    ext.gradleVersion = '8.4.0'
+    ext.dokka_version = "1.9.10"
+    ext.jacocoVersion = '0.8.12'
     repositories {
         google()
-        jcenter()
+        //jcenter()
+        mavenCentral()
         maven {
             url 'https://jitpack.io'
         }
@@ -22,7 +23,7 @@ buildscript {
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:${dokka_version}")
 
         //noinspection GradleDependency
-        classpath 'com.google.gms:google-services:4.3.15'
+        classpath 'com.google.gms:google-services:4.4.2'
         classpath "org.jetbrains.kotlin:kotlin-serialization:$kotlin_version"
 
         //test coverage
@@ -34,7 +35,7 @@ buildscript {
 }
 
 plugins{
-    id "org.sonarqube" version "4.3.1.3277"
+    id "org.sonarqube" version "5.1.0.4882"
 }
 
 sonarqube {
@@ -49,7 +50,8 @@ sonarqube {
 allprojects {
     repositories {
         google()
-        jcenter()
+        //jcenter()
+        mavenCentral()
         maven {
             url 'https://jitpack.io'
         }

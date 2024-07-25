@@ -210,7 +210,10 @@ open class PushKFirebaseService(
             val notificationConstruct = prepareNotification(remoteMessage.data, notificationId)
             if (notificationConstruct != null) {
                 var isNotificationSent =
-                    pushSdkNotificationManager.sendNotification(notificationConstruct, notificationId)
+                    pushSdkNotificationManager.sendNotification(
+                        notificationConstruct,
+                        notificationId
+                    )
                 if (isNotificationSent) {
                     onNotificationSent(
                         appIsInForeground,
@@ -271,7 +274,10 @@ open class PushKFirebaseService(
      * @return NotificationCompat.Builder?
      * @see PushSdkNotificationManager.NotificationStyle, (https://developer.android.com/training/notify-user/group), (https://stackoverflow.com/a/41114135)
      */
-    open fun prepareNotification(data: Map<String, String>, notificationId: Int): NotificationCompat.Builder? {
+    open fun prepareNotification(
+        data: Map<String, String>,
+        notificationId: Int
+    ): NotificationCompat.Builder? {
         PushSDKLogger.debug(applicationContext, "calling prepareNotification()")
         return pushSdkNotificationManager.constructNotification(
             data,
