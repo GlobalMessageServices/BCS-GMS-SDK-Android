@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,8 +38,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          api-level: 31
+          api-level: 29
+          arch: x86_64
           profile: Nexus 6
-          arch: arm64-v8a
+          force-avd-creation: false
           script: ./gradlew connectedCheck && ./gradlew build sonar --info
         
