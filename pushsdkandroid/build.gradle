@@ -182,7 +182,7 @@ afterEvaluate {
         repositories {
             maven {
                 //publish locally for now
-                url "file://${System.properties['user.home']}/.m2/repository"
+                url "${layout.buildDirectory.get()}/maven-repos/"
 //                def releasesRepoUrl = "$buildDir/maven-repos/releases"
 //                def snapshotsRepoUrl = "$buildDir/maven-repos/snapshots"
 //                url = version.endsWith('RELEASE') ? releasesRepoUrl : snapshotsRepoUrl
