@@ -28,14 +28,24 @@ internal class SharedPreferencesHandler(context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 context.deleteSharedPreferences(preferenceDatabase)
             } else {
-                val sharedPrefsFile =
-                    File(context.filesDir.parent!! + "/shared_prefs/"
-                            + preferenceDatabase + ".xml")
-                if (sharedPrefsFile.exists()) {
-                    sharedPrefsFile.delete()
-                }
+                deleteSharedPreferences(preferenceDatabase, context)
             }
             getEncryptedSharedPref(context)
+        }
+    }
+
+    private fun deleteSharedPreferences(preferenceDatabase: String, context: Context) {
+        try {
+            val sharedPrefsFile =
+                File(context.filesDir.parent + "/shared_prefs/" + preferenceDatabase + ".xml")
+            if (sharedPrefsFile.exists()) {
+                sharedPrefsFile.delete()
+            }
+        } catch (e: Exception) {
+            PushSDKLogger.error(
+                "Shared preference deleting failed with exception: " +
+                        Log.getStackTraceString(e)
+            )
         }
     }
 
