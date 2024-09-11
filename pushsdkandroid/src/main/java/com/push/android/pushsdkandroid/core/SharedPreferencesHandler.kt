@@ -2,15 +2,42 @@ package com.push.android.pushsdkandroid.core
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.push.android.pushsdkandroid.utils.PushSDKLogger
+import java.io.File
+import javax.crypto.AEADBadTagException
 
 @Suppress("unused")
 internal class SharedPreferencesHandler(context: Context) {
     private val preferenceDatabase = "push_k_database"
-    private var sharedPref: SharedPreferences = getEncryptedSharedPref(context)
+    private var sharedPref: SharedPreferences = initializeSharedPref(context)
 
 
+    private fun initializeSharedPref(context: Context): SharedPreferences {
+        return try {
+            getEncryptedSharedPref(context)
+        } catch (e: AEADBadTagException) {
+            PushSDKLogger.error(
+                "Shared preference initializing failed with exception: " +
+                        Log.getStackTraceString(e)
+            )
+            // Handle exception, likely data corruption or key change (e.g. app was uninstalled and installed again)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                context.deleteSharedPreferences(preferenceDatabase)
+            } else {
+                val sharedPrefsFile =
+                    File(context.filesDir.parent!! + "/shared_prefs/"
+                            + preferenceDatabase + ".xml")
+                if (sharedPrefsFile.exists()) {
+                    sharedPrefsFile.delete()
+                }
+            }
+            getEncryptedSharedPref(context)
+        }
+    }
 
     private fun getEncryptedSharedPref(context: Context): SharedPreferences {
         return EncryptedSharedPreferences.create(
