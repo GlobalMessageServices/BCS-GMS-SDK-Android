@@ -26,8 +26,7 @@
             android:allowEmbedded="true"
             android:documentLaunchMode="always"
             android:exported="true"
-            android:resizeableActivity="true">
-        </activity>
+            android:resizeableActivity="true"></activity>
 
         <activity
             android:name=".MainActivity"
@@ -49,6 +48,14 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".handler.MyBroadcastReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="pushsdk.notification.reply.intent" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

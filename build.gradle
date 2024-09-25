@@ -9,11 +9,11 @@ buildscript {
 
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.4.0'
+        classpath 'com.android.tools.build:gradle:8.2.0'
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10'
 
         // Add this line
-        classpath 'com.google.gms:google-services:4.3.13'
+        classpath 'com.google.gms:google-services:4.4.1'
 
 
 
@@ -35,7 +35,7 @@ allprojects {
     repositories {
         // Check that you have the following line (if not, add it):
         google()  // Google's Maven repository
-        jcenter()
+        //jcenter()
         mavenCentral()
         maven {
             url 'https://jitpack.io'

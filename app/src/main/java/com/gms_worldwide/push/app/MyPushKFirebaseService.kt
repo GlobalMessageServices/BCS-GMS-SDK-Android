@@ -2,7 +2,9 @@ package com.gms_worldwide.push.app
 
 
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.gms_worldwide.push.app.handler.MyBroadcastReceiver
 import com.google.firebase.messaging.RemoteMessage
 import com.google.gson.Gson
 import com.push.android.pushsdkandroid.PushKFirebaseService
@@ -71,13 +73,15 @@ class MyPushKFirebaseService : PushKFirebaseService(
         notificationId: Int
     ): NotificationCompat.Builder? {
         //return super.prepareNotification(data, notificationId)
+        val replyIntent = Intent(this, MyBroadcastReceiver::class.java)
         val bubbleIntent = Intent(this, BubbleActivity::class.java)
         val bubbleSettings =
             BubbleSettings(setSuppressNotification = true, setAutoExpandBubble = false)
         return pushSdkNotificationManager.constructNotification(
             data,
             notificationId,
-            PushSdkNotificationManager.NotificationStyle.BIG_TEXT
+            PushSdkNotificationManager.NotificationStyle.BIG_TEXT,
+            replyIntent
         )
 
     }
@@ -140,7 +144,22 @@ class MyPushKFirebaseService : PushKFirebaseService(
         println("message received=$message")
         super.onMessageReceived(remoteMessage)
 
+        if (remoteMessage.data.isNotEmpty() && remoteMessage.data["source"] == "Messaging HUB") {
+            sendDataPushBroadcast(remoteMessage)
+        }
     }
 
+    private fun sendDataPushBroadcast(remoteMessage: RemoteMessage) {
+        try {
+            Intent().apply {
+                action = BROADCAST_PUSH_DATA_INTENT_ACTION
+                putExtra(BROADCAST_PUSH_DATA_EXTRA_NAME, remoteMessage.data["message"])
+                sendBroadcast(this)
+            }
+            Log.d("TAG2", "datapush broadcast success")
+        } catch (e: Exception) {
+            Log.d("ERROR","datapush broadcast error: ${Log.getStackTraceString(e)}")
+        }
+    }
 
 }

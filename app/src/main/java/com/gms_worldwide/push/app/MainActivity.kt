@@ -13,18 +13,15 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
 import com.gms_worldwide.push.app.databinding.ActivityMainBinding
 import com.gms_worldwide.push.app.models.MessageList
 import com.google.gson.Gson
 import com.push.android.pushsdkandroid.PushSDK
-import com.push.android.pushsdkandroid.managers.PushSdkNotificationManager
-import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
+
 
     private val BROADCAST_PUSH_DATA_INTENT_ACTION = "com.push.android.pushsdkandroid.Push"
     private val BROADCAST_PUSH_DATA_EXTRA_NAME = "data"
@@ -36,87 +33,32 @@ class MainActivity : AppCompatActivity() {
 
 
     /**
-     * Create broadcast receiver to catch single messages and messages from queue
+     * Create broadcast receiver to catch single messages
      */
     private val mPlugInReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             println("onReceive is call, intent: $intent")
             val remoteInput = RemoteInput.getResultsFromIntent(intent)
             when (intent.action) {
-                PushSDK.NOTIFICATION_CLICK_INTENT_ACTION -> {
-                    intent.extras?.let {
-                        Log.d(
-                            "TAG1",
-                            it.getString(PushSDK.NOTIFICATION_CLICK_PUSH_DATA_EXTRA_NAME).toString()
-                        )
-                        textOut.text =
-                            it.getString(PushSDK.NOTIFICATION_CLICK_PUSH_DATA_EXTRA_NAME).toString()
-
-                    }
-                }
 
                 BROADCAST_PUSH_DATA_INTENT_ACTION -> {
                     intent.extras?.let {
                         Log.d(
                             "TAG1",
-                            it.getString(BROADCAST_PUSH_DATA_EXTRA_NAME).toString()
+                            "push message is ${
+                                it.getString(BROADCAST_PUSH_DATA_EXTRA_NAME).toString()
+                            }"
                         )
                         textOut.text = it.getString(BROADCAST_PUSH_DATA_EXTRA_NAME).toString()
 
-                    }
-                }
-
-                PushSDK.NOTIFICATION_REPLY_INTENT_ACTION -> {
-                    intent.extras?.let {
-                        //get extra data
-                        val data = it.getString(PushSDK.NOTIFICATION_REPLY_DATA_EXTRA_NAME)
-                        val notificationTag = it.getString(PushSDK.NOTIFICATION_TAG_EXTRA_NAME)
-                        val notificationId = it.getInt(PushSDK.NOTIFICATION_ID_EXTRA_NAME)
-                        println("data: $data")
-                        println("tag: $notificationTag")
-                        println("id: $notificationId")
-
-                        if (remoteInput != null) {
-                            //get reply text
-                            val reply = remoteInput.getCharSequence(
-                                "pushsdk.remote_input_key"
-                            ).toString()
-                            println("reply is: $reply")
-                            updateNotification(
-                                context,
-                                notificationTag.toString(),
-                                notificationId,
-                                reply
-                            )
-                        }
                     }
                 }
             }
         }
     }
 
-    fun updateNotification(context: Context, tag: String, id: Int, reply: String) {
-        val notification = NotificationCompat.Builder(
-            context,
-            PushSdkNotificationManager.DEFAULT_NOTIFICATION_CHANNEL_ID
-        )
-            .setSmallIcon(R.drawable.ic_not_icon)
-            .setContentText(reply)
-            .setTimeoutAfter(1)
-            .build()
-
-        // show notification. This hides direct reply UI
-        // NotificationManagerCompat.from(context).notify(id, notification)
-
-
-        NotificationManagerCompat.from(context).cancel(tag, id)
-    }
-
-
     override fun onStart() {
         super.onStart()
-
-
         //Register broadcast receiver and add actions.
 
         try {
@@ -129,17 +71,12 @@ class MainActivity : AppCompatActivity() {
         filter.addAction(PushSDK.NOTIFICATION_CLICK_INTENT_ACTION)
         filter.addAction(BROADCAST_PUSH_DATA_INTENT_ACTION)
         filter.addAction(PushSDK.NOTIFICATION_REPLY_INTENT_ACTION)
-        registerReceiver(mPlugInReceiver, filter)
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(mPlugInReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(mPlugInReceiver, filter)
+        }
     }
-
-    override fun onPause() {
-        super.onPause()
-
-        //Unregister broadcast receiver to avoid duplicating of it.
-        //unregisterReceiver(mPlugInReceiver)
-    }
-
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -148,15 +85,41 @@ class MainActivity : AppCompatActivity() {
         setContentView(mainBinding.root)
         //setContentView(R.layout.activity_main)
 
-        var pushSDK = PushSDK(
+        /*val pushSDK = PushSDK(
             context = this,
             baseApiUrl = "base-api-url",
             PushSDK.LogLevels.PUSHSDK_LOG_LEVEL_DEBUG,
             enableAutoDeliveryReport = false
+        )*/
+
+        var pushSDK = PushSDK(
+            context = this,
+            baseApiUrl = "https://push.hyber.im/api/3.0",
+            PushSDK.LogLevels.PUSHSDK_LOG_LEVEL_DEBUG,
+            enableAutoDeliveryReport = false
         )
+        R.drawable.ic_not_icon
+
+        intent.extras?.let {
+            if (!it.isEmpty) {
+                when (intent.action) {
+                    PushSDK.NOTIFICATION_CLICK_INTENT_ACTION -> {
+                        val extra = it.getString(PushSDK.NOTIFICATION_CLICK_PUSH_DATA_EXTRA_NAME)
+                        val message = Gson().fromJson(
+                            extra,
+                            com.gms_worldwide.push.app.models.PushDataMessageModel::class.java
+                        )
+                        println("message from click $message")
+                    }
+                }
+            }
+        }
 
 
-        val clientAPI = "client-api-key"
+        //val clientAPI = "client-api-key"
+        val clientAPI = "dbb84261-f822-4ff3-aaf4-d4d9a62f109c"
+        //val appFingerPrint = "app-finger-print"
+        val appFingerPrint = "E9:BC:98:65:9A:83:FE:8A:10:AA:BB:D0:55:39:A6:15:86:40:C1:60"
 
 
         textOut = mainBinding.textOut
@@ -172,12 +135,12 @@ class MainActivity : AppCompatActivity() {
         var callBack = mainBinding.callBack
         var clearText = mainBinding.clearText
         var dataBtn = mainBinding.dataBtn
-        var viberBtn =mainBinding.viberBtn
+        var viberBtn = mainBinding.viberBtn
         reg.setOnClickListener {
             var response = pushSDK.registerNewDevice(
                 clientAPI,  //API key that you would be provided with
-                "app-finger-print", //APP fingerprint that you would be provided with
-                "1234567890", //Device's phone number
+                appFingerPrint, //APP fingerprint that you would be provided with
+                "380936328201", //Device's phone number
                 "Android" //password, associated with Device's phone number (legacy - it is unused, you can put any value)
             )
             print(response)
